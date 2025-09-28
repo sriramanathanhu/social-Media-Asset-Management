@@ -25,8 +25,8 @@ RUN npm run build
 # Production stage
 FROM node:18-alpine AS runner
 
-# Install dependencies for SQLite and PostgreSQL support
-RUN apk add --no-cache libc6-compat sqlite postgresql-client
+# Install dependencies for PostgreSQL support
+RUN apk add --no-cache libc6-compat postgresql-client
 
 WORKDIR /app
 
@@ -42,8 +42,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Create data directory for database
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+# Create uploads directory
 RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
 
 # Copy startup script

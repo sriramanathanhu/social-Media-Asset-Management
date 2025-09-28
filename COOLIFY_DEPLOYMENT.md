@@ -11,9 +11,8 @@ Set the following environment variables in your Coolify application:
 #### Required Environment Variables
 
 ```env
-# Database Configuration
+# Database Configuration - PostgreSQL (Required)
 DATABASE_URL=postgresql://username:password@host:5432/social_media_portal
-DATABASE_PROVIDER=postgresql
 
 # Authentication - Nandi SSO
 NANDI_SSO_URL=https://auth.kailasa.ai
@@ -38,16 +37,34 @@ NEXT_TELEMETRY_DISABLED=1
 
 ### 2. Database Setup
 
-#### Option A: PostgreSQL (Recommended for Production)
-1. Create a PostgreSQL database in Coolify or use an external provider
-2. Set `DATABASE_URL` to your PostgreSQL connection string
-3. Set `DATABASE_PROVIDER=postgresql`
+#### PostgreSQL Setup (Required)
 
-#### Option B: SQLite (For Testing Only)
-```env
-DATABASE_URL=file:/app/data/prod.db
-DATABASE_PROVIDER=sqlite
-```
+**Option A: Using Coolify's Built-in PostgreSQL Service**
+1. In your Coolify project, add a **PostgreSQL service**:
+   - Click "New Service" → "PostgreSQL"
+   - Choose PostgreSQL version (14 or higher recommended)
+   - Set database name: `social_media_portal`
+   - Set username and strong password
+   - Deploy the PostgreSQL service
+
+2. **Get the connection string**:
+   - Once deployed, copy the internal connection URL
+   - Format: `postgresql://username:password@postgres-service:5432/social_media_portal`
+
+3. **Set DATABASE_URL** in your application environment variables
+
+**Option B: External PostgreSQL Provider**
+You can use external providers like:
+- **Supabase** (postgres://...)
+- **Railway** (postgres://...)
+- **AWS RDS** (postgres://...)
+- **Google Cloud SQL** (postgres://...)
+
+**Database Requirements:**
+- PostgreSQL 12+ (14+ recommended)
+- Database name: `social_media_portal`
+- UTF8 encoding
+- At least 100MB storage (grows with data)
 
 ## 📋 Coolify Configuration
 
@@ -100,9 +117,8 @@ The startup script automatically:
 
 ### 3. Persistent Data
 
-For SQLite deployments, ensure you configure persistent storage in Coolify:
-- Mount `/app/data` for database files
-- Mount `/app/uploads` for file uploads
+Configure persistent storage in Coolify for:
+- Mount `/app/uploads` for file uploads (if using file upload features)
 
 ## 🛠️ Post-Deployment
 
@@ -116,12 +132,12 @@ For SQLite deployments, ensure you configure persistent storage in Coolify:
 
 If you want to import sample data:
 ```bash
-# Access the container
-docker exec -it your_container_name sh
-
+# Access the container via Coolify terminal or SSH
 # Run the import script
 npm run db:seed
 ```
+
+**Note**: The database will be automatically migrated on startup, so no manual migration is needed.
 
 ### 3. Monitoring
 
@@ -180,9 +196,10 @@ Database migrations run automatically during deployment via the startup script.
 ### Backup Strategy
 
 For production deployments:
-1. Set up regular database backups
-2. Consider using Coolify's backup features
-3. Test backup restoration procedures
+1. **PostgreSQL Backups**: Use Coolify's built-in PostgreSQL backup features
+2. **External Backups**: Set up `pg_dump` scheduled backups for external PostgreSQL
+3. **Application Data**: Back up uploaded files if using file uploads
+4. Test backup restoration procedures regularly
 
 ## 📚 Additional Resources
 

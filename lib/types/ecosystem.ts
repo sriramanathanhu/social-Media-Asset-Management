@@ -1,7 +1,6 @@
 // Ecosystem-related types
 export interface Ecosystem {
   id: number;
-  Id?: number; // NocoDB sometimes returns capital Id
   name: string;
   theme: string;
   description?: string;
@@ -28,7 +27,6 @@ export interface EcosystemWithPlatforms extends Ecosystem {
 
 export interface Platform {
   id: number;
-  Id?: number; // NocoDB sometimes returns capital Id
   platform_name: string;
   platform_type: string;
   profile_id?: string;
