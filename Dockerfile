@@ -10,7 +10,10 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
+# Set NODE_ENV to development for build to include devDependencies
+ENV NODE_ENV=development
+
+# Install dependencies (including devDependencies for build)
 RUN npm ci --legacy-peer-deps
 
 # Generate Prisma client
@@ -48,6 +51,10 @@ RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
 # Copy startup script
 COPY --chown=nextjs:nodejs scripts/start.sh ./start.sh
 RUN chmod +x ./start.sh
+
+# Ensure proper permissions for Prisma
+RUN chown -R nextjs:nodejs /app/node_modules/.prisma
+RUN chown -R nextjs:nodejs /app/prisma
 
 # Switch to non-root user
 USER nextjs
