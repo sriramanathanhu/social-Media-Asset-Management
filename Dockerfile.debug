@@ -1,0 +1,99 @@
+# Debug version with more verbose output
+FROM node:18-alpine AS builder
+
+# Install dependencies
+RUN apk add --no-cache libc6-compat python3 make g++
+
+WORKDIR /app
+
+# Copy package files first
+COPY package*.json ./
+
+# Debug environment
+RUN echo "=== Node Environment ===" && \
+    node --version && \
+    npm --version && \
+    echo "NODE_ENV: $NODE_ENV"
+
+# Install dependencies with development mode
+ENV NODE_ENV=development
+RUN npm ci --legacy-peer-deps --verbose
+
+# Copy all source files
+COPY . .
+
+# Generate Prisma client with debug
+RUN echo "=== Generating Prisma Client ===" && \
+    npx prisma generate --verbose
+
+# Check if critical files exist
+RUN echo "=== Checking Critical Files ===" && \
+    ls -la && \
+    echo "--- next.config.ts ---" && \
+    cat next.config.ts && \
+    echo "--- tsconfig.json ---" && \
+    cat tsconfig.json && \
+    echo "--- package.json scripts ---" && \
+    cat package.json | grep -A 15 '"scripts"'
+
+# Create required Next.js files
+RUN touch next-env.d.ts
+
+# Test build command step by step
+RUN echo "=== Testing Build Command ===" && \
+    npx next info
+
+# Run the actual build
+RUN echo "=== Starting Build Process ===" && \
+    npm run build 2>&1 | tee build.log || { \
+        echo "=== BUILD FAILED - Showing logs ==="; \
+        cat build.log; \
+        echo "=== Checking node_modules ==="; \
+        ls -la node_modules/.bin/ | grep next; \
+        echo "=== Checking TypeScript ==="; \
+        which tsc || echo "TypeScript not found"; \
+        exit 1; \
+    }
+
+# Production stage
+FROM node:18-alpine AS runner
+
+RUN apk add --no-cache libc6-compat postgresql-client
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Create uploads directory
+RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
+
+# Copy startup script
+COPY --chown=nextjs:nodejs scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+# Switch to non-root user
+USER nextjs
+
+# Environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
+
+CMD ["./start.sh"]

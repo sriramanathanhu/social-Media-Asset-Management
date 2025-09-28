@@ -8,27 +8,32 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
 
-# Set NODE_ENV to development for build to include devDependencies
+# Set NODE_ENV to development for build (includes devDependencies)
 ENV NODE_ENV=development
 
-# Install dependencies (including devDependencies for build)
+# Install all dependencies
 RUN npm ci --legacy-peer-deps
+
+# Copy prisma schema first
+COPY prisma ./prisma/
 
 # Generate Prisma client
 RUN npx prisma generate
 
-# Copy source code
+# Copy all source code
 COPY . .
 
-# Build the application
+# Ensure Next.js environment file exists
+RUN touch next-env.d.ts
+
+# Build the application (with Prisma generation included)
 RUN npm run build
 
 # Production stage
 FROM node:18-alpine AS runner
 
-# Install dependencies for PostgreSQL support
+# Install PostgreSQL client for database operations
 RUN apk add --no-cache libc6-compat postgresql-client
 
 WORKDIR /app
