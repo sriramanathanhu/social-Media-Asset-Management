@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: social-media-portal
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Node environment
+      - NODE_ENV=production
+      
+      # Database (SQLite for development, PostgreSQL for production)
+      - DATABASE_URL=${DATABASE_URL:-file:/app/data/dev.db}
+      
+      # Authentication
+      - NANDI_SSO_URL=${NANDI_SSO_URL}
+      - NANDI_APP_ID=${NANDI_APP_ID}
+      - NANDI_RETURN_URL=${NANDI_RETURN_URL}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL}
+      - NEXT_PUBLIC_AUTH_CLIENT_ID=${NEXT_PUBLIC_AUTH_CLIENT_ID}
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+      
+      # Security
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      
+      # Port
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      
+    volumes:
+      # Persist database and uploads (only for SQLite)
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
