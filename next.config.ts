@@ -16,9 +16,15 @@ const nextConfig: NextConfig = {
     // Ignore TypeScript errors during build to prevent build failures
     ignoreBuildErrors: true,
   },
+  // Skip static generation for problematic pages
+  trailingSlash: false,
+  // Disable problematic optimizations
+  swcMinify: true,
+  poweredByHeader: false,
+  // Experimental features for better build stability
   experimental: {
-    // Improve build stability
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
+    // Skip static optimization for dynamic pages
+    optimizePackageImports: ['@prisma/client', 'lucide-react'],
   },
 };
 

@@ -25,6 +25,9 @@ COPY . .
 # Ensure Next.js environment file exists
 RUN touch next-env.d.ts
 
+# Set NODE_ENV to production for build (resolve NODE_ENV warning)
+ENV NODE_ENV=production
+
 # Build the application (with Prisma generation included)
 RUN npm run build
 
