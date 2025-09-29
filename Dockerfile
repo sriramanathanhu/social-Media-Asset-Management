@@ -35,8 +35,8 @@ RUN npm run build
 # Production stage
 FROM node:18-alpine AS runner
 
-# Install PostgreSQL client for database operations
-RUN apk add --no-cache libc6-compat postgresql-client
+# Install PostgreSQL client and curl for database operations and healthcheck
+RUN apk add --no-cache libc6-compat postgresql-client curl
 
 WORKDIR /app
 
@@ -75,9 +75,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-# Health check - Use IPv4 and add error handling
+# Health check - Use curl for better compatibility with Coolify
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
-  CMD node -e "const http = require('http'); const req = http.get({hostname: '127.0.0.1', port: 3000, path: '/api/health', timeout: 10000}, (res) => { res.on('data', () => {}); res.on('end', () => process.exit(res.statusCode === 200 ? 0 : 1)); }); req.on('error', () => process.exit(1)); req.on('timeout', () => { req.destroy(); process.exit(1); });"
+  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
 
 # Start the application
 CMD ["./start.sh"]

@@ -63,7 +63,7 @@ RUN echo "=== Starting Build Process ===" && \
 # Production stage
 FROM node:18-alpine AS runner
 
-RUN apk add --no-cache libc6-compat postgresql-client
+RUN apk add --no-cache libc6-compat postgresql-client curl
 
 WORKDIR /app
 
@@ -97,8 +97,8 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-# Health check - Use IPv4 and add error handling
+# Health check - Use curl for better compatibility with Coolify
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
-  CMD node -e "const http = require('http'); const req = http.get({hostname: '127.0.0.1', port: 3000, path: '/api/health', timeout: 10000}, (res) => { res.on('data', () => {}); res.on('end', () => process.exit(res.statusCode === 200 ? 0 : 1)); }); req.on('error', () => process.exit(1)); req.on('timeout', () => { req.destroy(); process.exit(1); });"
+  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
 
 CMD ["./start.sh"]

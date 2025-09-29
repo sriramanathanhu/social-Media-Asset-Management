@@ -46,7 +46,9 @@ Set these environment variables in Coolify:
 
 ```bash
 # Database Configuration
-DATABASE_URL=postgresql://your_username:your_password@postgres:5432/social_media_portal?schema=public
+# IMPORTANT: Replace 'your_username' with your actual PostgreSQL username
+# The logs show it's looking for 'ecosystemuser' - ensure this matches your PostgreSQL service
+DATABASE_URL=postgresql://ecosystemuser:your_password@postgres:5432/social_media_portal?schema=public
 
 # Application Settings
 NODE_ENV=production
@@ -110,13 +112,19 @@ postgresql://username:password@postgres:5432/social_media_portal?schema=public
 ### Common Issues
 
 #### 1. Database Authentication Failed (P1000)
-**Error:** `Authentication failed against database server`
+**Error:** `Authentication failed against database server, the provided database credentials for 'ecosystemuser' are not valid`
 
 **Solutions:**
-- Verify DATABASE_URL username and password are correct
-- Check PostgreSQL service is running and accessible
-- Ensure database `social_media_portal` exists
-- Try recreating PostgreSQL service if needed
+- **Check USERNAME**: Ensure your PostgreSQL service uses username `ecosystemuser` OR update your DATABASE_URL to match your actual username
+- **Check PASSWORD**: Verify the password in your DATABASE_URL matches your PostgreSQL service password
+- **Check PostgreSQL service**: Ensure it's running and accessible
+- **Verify database exists**: Ensure database `social_media_portal` exists
+- **Service naming**: Confirm your PostgreSQL service hostname matches (usually `postgres`)
+
+**Debug Steps:**
+1. Go to your PostgreSQL service in Coolify dashboard
+2. Check the username and password configured
+3. Update your DATABASE_URL to match exactly: `postgresql://actual_username:actual_password@postgres:5432/social_media_portal`
 
 #### 2. Database Not Ready
 **Error:** `PostgreSQL is unavailable`
