@@ -17,15 +17,15 @@ export default function LoginPage() {
       .catch(console.error);
   }, [router]);
 
-  const handleNandiLogin = () => {
-    console.log('Nandi SSO login clicked');
+  const handleLogin = () => {
+    console.log('Nandi SSO login clicked (includes Google login option)');
     
     const authUrl = process.env.NEXT_PUBLIC_NANDI_SSO_URL || 'https://auth.kailasa.ai';
     const clientId = process.env.NEXT_PUBLIC_NANDI_APP_ID;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
     
     if (!clientId) {
-      alert('Nandi Auth not configured. Please contact administrator.');
+      alert('Authentication not configured. Please contact administrator.');
       return;
     }
     
@@ -35,35 +35,9 @@ export default function LoginPage() {
     });
     
     const fullAuthUrl = `${authUrl}/auth/sign-in?${params.toString()}`;
-    console.log('Redirecting to Nandi:', fullAuthUrl);
+    console.log('Redirecting to Nandi SSO (includes Google login):', fullAuthUrl);
     
     window.location.href = fullAuthUrl;
-  };
-
-  const handleGoogleLogin = () => {
-    console.log('Google OAuth login clicked');
-    
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    
-    if (!clientId) {
-      alert('Google OAuth not configured. Please contact administrator.');
-      return;
-    }
-    
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: `${baseUrl}/api/auth/google/callback`,
-      response_type: 'code',
-      scope: 'openid email profile',
-      access_type: 'offline',
-      prompt: 'consent'
-    });
-    
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-    console.log('Redirecting to Google:', googleAuthUrl);
-    
-    window.location.href = googleAuthUrl;
   };
 
   const features = [
@@ -117,32 +91,12 @@ export default function LoginPage() {
           </div>
 
           <div style={{ marginTop: '3rem' }}>
-            {/* Nandi SSO Login */}
             <button
-              onClick={handleNandiLogin}
+              onClick={handleLogin}
               style={{
                 width: '100%',
                 padding: '0.875rem',
                 backgroundColor: '#0066cc',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '16px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                marginBottom: '1rem'
-              }}
-            >
-              Sign in with Nandi SSO
-            </button>
-
-            {/* Google OAuth Login */}
-            <button
-              onClick={handleGoogleLogin}
-              style={{
-                width: '100%',
-                padding: '0.875rem',
-                backgroundColor: '#db4437',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -155,9 +109,18 @@ export default function LoginPage() {
                 gap: '0.5rem'
               }}
             >
-              <span>🔑</span>
-              Sign in with Google
+              <span>🔐</span>
+              Sign in with SSO
             </button>
+            
+            <p style={{
+              fontSize: '11px',
+              textAlign: 'center',
+              color: '#6b7280',
+              marginTop: '0.75rem'
+            }}>
+              Choose from multiple login options including Google, Email, and more
+            </p>
             
             <p style={{
               fontSize: '12px',

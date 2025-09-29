@@ -63,21 +63,15 @@ ENCRYPTION_KEY=your_32_character_encryption_key_here
 ### Authentication Variables (Optional)
 
 ```bash
-# Authentication - Dual Auth Support (Nandi SSO + Google OAuth)
-
-# Nandi SSO Configuration
+# Authentication - Nandi SSO Only (includes Google login internally)
 NANDI_SSO_URL=https://auth.kailasa.ai
-NANDI_APP_ID=your_app_id_here
+NANDI_APP_ID=1243-2739-1026-8361
+NANDI_CLIENT_SECRET=qhDHH98ySeYaYWHKJRG2G3QKXZSVKWC5MLT4
 NANDI_RETURN_URL=https://yourdomain.com/api/auth/callback
-
-# Google OAuth Configuration (Optional - get from Google Cloud Console)
-GOOGLE_CLIENT_ID=your_google_client_id.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # Public Environment Variables (for frontend)
 NEXT_PUBLIC_NANDI_SSO_URL=https://auth.kailasa.ai
-NEXT_PUBLIC_NANDI_APP_ID=your_app_id_here
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id.googleusercontent.com
+NEXT_PUBLIC_NANDI_APP_ID=1243-2739-1026-8361
 NEXT_PUBLIC_BASE_URL=https://yourdomain.com
 ```
 

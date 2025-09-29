@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
       },
       body: JSON.stringify({
         client_id: process.env.NANDI_APP_ID,
+        client_secret: process.env.NANDI_CLIENT_SECRET,
         code: authCode,
       }),
     });

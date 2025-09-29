@@ -4,8 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const nandiSessionToken = cookieStore.get("nandi_session_token");
-    const googleSessionToken = cookieStore.get("google_session_token");
+    const sessionToken = cookieStore.get("nandi_session_token");
     const logoutFlag = cookieStore.get("force_logout");
 
     // Check if user has been forcefully logged out
@@ -15,31 +14,7 @@ export async function GET() {
       });
     }
 
-    // Check Google session first
-    if (googleSessionToken) {
-      try {
-        const sessionData = JSON.parse(Buffer.from(googleSessionToken.value, 'base64').toString());
-        
-        // Check if session is expired
-        if (sessionData.expires_at && Date.now() > sessionData.expires_at) {
-          return new Response(JSON.stringify({ authenticated: false, message: "Session expired" }), {
-            status: 401,
-          });
-        }
-
-        return new Response(JSON.stringify({ 
-          authenticated: true,
-          user: sessionData.user,
-          provider: 'google'
-        }), { status: 200 });
-      } catch (error) {
-        console.error("Error parsing Google session:", error);
-        // Continue to check Nandi session
-      }
-    }
-
-    // Check Nandi session
-    if (!nandiSessionToken) {
+    if (!sessionToken) {
       return new Response(JSON.stringify({ authenticated: false }), {
         status: 401,
       });
@@ -114,12 +89,11 @@ export async function DELETE() {
   try {
     const cookieStore = await cookies();
     
-    // Get both session tokens
-    const nandiSessionToken = cookieStore.get("nandi_session_token");
-    const googleSessionToken = cookieStore.get("google_session_token");
+    // Get the session token first before deleting it
+    const sessionToken = cookieStore.get("nandi_session_token");
     
-    // Try to revoke the Nandi session if it exists
-    if (nandiSessionToken?.value) {
+    // Try to revoke the session on Nandi first if possible
+    if (sessionToken?.value) {
       try {
         // First try to get the actual session from the token
         const sessionRes = await fetch(
@@ -127,7 +101,7 @@ export async function DELETE() {
           {
             headers: {
               "Content-Type": "application/json",
-              cookie: `nandi_session=${nandiSessionToken.value}`,
+              cookie: `nandi_session=${sessionToken.value}`,
             },
           }
         );
@@ -144,11 +118,11 @@ export async function DELETE() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              cookie: `nandi_session=${nandiSessionToken.value}`,
+              cookie: `nandi_session=${sessionToken.value}`,
             },
             body: JSON.stringify({
               client_id: process.env.NANDI_APP_ID,
-              session_token: nandiSessionToken.value
+              session_token: sessionToken.value
             })
           }
         );
@@ -163,26 +137,17 @@ export async function DELETE() {
       }
     }
     
-    // Delete all session cookies with proper options
+    // Delete the session cookie with proper options matching the original cookie
     cookieStore.set("nandi_session_token", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 0,
-      path: "/",
-    });
-    
-    cookieStore.set("google_session_token", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "strict",  // Match the original cookie sameSite setting
       maxAge: 0,
       path: "/",
     });
     
     // Also delete any other possible cookie variations
     cookieStore.delete("nandi_session_token");
-    cookieStore.delete("google_session_token");
     cookieStore.delete("nandi_session");
     
     // Set a logout flag since we can't actually logout from Nandi
