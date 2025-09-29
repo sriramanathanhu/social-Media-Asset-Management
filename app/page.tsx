@@ -7,6 +7,16 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Check for error parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    if (error) {
+      console.error('Authentication error:', error);
+      if (error === 'no_auth_code') {
+        alert('Authentication failed: No authorization code received. Please try again.');
+      }
+    }
+
     // Check if already authenticated
     fetch("/api/auth/session")
       .then((res) => {
@@ -49,13 +59,24 @@ export default function LoginPage() {
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: `${baseUrl}/api/auth/callback`,
+      response_type: 'code', // Standard OAuth parameter
+      scope: 'openid email profile', // Request basic profile info
     });
     
-    const fullAuthUrl = `${authUrl}/auth/sign-in?${params.toString()}`;
-    console.log('Redirecting to Nandi SSO (includes Google login):', fullAuthUrl);
+    // Try the standard OAuth authorize endpoint
+    const fullAuthUrl = `${authUrl}/auth/authorize?${params.toString()}`;
+    console.log('=== FRONTEND AUTH DEBUG ===');
+    console.log('Auth URL:', authUrl);
+    console.log('Client ID:', clientId);
+    console.log('Base URL:', baseUrl);
+    console.log('Redirect URI:', `${baseUrl}/api/auth/callback`);
     console.log('Full auth URL:', fullAuthUrl);
+    console.log('About to redirect to:', fullAuthUrl);
     
-    window.location.href = fullAuthUrl;
+    // Add a small delay to ensure logs are visible
+    setTimeout(() => {
+      window.location.href = fullAuthUrl;
+    }, 100);
   };
 
   const features = [

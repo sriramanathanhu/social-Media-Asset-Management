@@ -6,15 +6,26 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const authCode = searchParams.get("auth_code") || searchParams.get("code");
     
-    console.log("Auth callback received, auth_code:", authCode ? "present" : "missing");
-    console.log("Environment check (Nandi Auth only):");
-    console.log("- NANDI_SSO_URL:", process.env.NANDI_SSO_URL ? "present" : "missing");
-    console.log("- NANDI_APP_ID:", process.env.NANDI_APP_ID ? "present" : "missing");
-    console.log("- NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL ? "present" : "missing");
+    console.log("=== AUTH CALLBACK DEBUG ===");
+    console.log("Full URL:", request.url);
+    console.log("Search params:", searchParams.toString());
+    console.log("Auth code:", authCode ? "present" : "missing");
+    console.log("Environment check:");
+    console.log("- NANDI_SSO_URL:", process.env.NANDI_SSO_URL);
+    console.log("- NANDI_APP_ID:", process.env.NANDI_APP_ID);
+    console.log("- NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL);
 
+    // If no auth code, this might be a direct access to callback
     if (!authCode) {
-      console.error("Missing auth_code in callback");
-      return new Response("Missing auth_code", { status: 400 });
+      console.error("Missing auth_code in callback - this suggests user didn't go through SSO flow");
+      console.error("Possible issues:");
+      console.error("1. User accessed callback URL directly");
+      console.error("2. SSO service didn't redirect properly");
+      console.error("3. Wrong SSO endpoint or parameters");
+      
+      // Redirect back to home page instead of showing error
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
+      return Response.redirect(`${baseUrl}/?error=no_auth_code`, 302);
     }
 
     // Validate required environment variables
