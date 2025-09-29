@@ -17,26 +17,53 @@ export default function LoginPage() {
       .catch(console.error);
   }, [router]);
 
-  const handleLogin = () => {
-    console.log('Login button clicked');
-    console.log('ENV AUTH_URL:', process.env.NEXT_PUBLIC_AUTH_URL);
-    console.log('ENV CLIENT_ID:', process.env.NEXT_PUBLIC_AUTH_CLIENT_ID);
-    console.log('ENV BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL);
+  const handleNandiLogin = () => {
+    console.log('Nandi SSO login clicked');
     
-    const authUrl = process.env.NEXT_PUBLIC_AUTH_URL || 'https://auth.kailasa.ai';
-    const clientId = process.env.NEXT_PUBLIC_AUTH_CLIENT_ID || '9283-1346-1927-1029';
+    const authUrl = process.env.NEXT_PUBLIC_NANDI_SSO_URL || 'https://auth.kailasa.ai';
+    const clientId = process.env.NEXT_PUBLIC_NANDI_APP_ID;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+    
+    if (!clientId) {
+      alert('Nandi Auth not configured. Please contact administrator.');
+      return;
+    }
     
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: `${baseUrl}/api/auth/callback`,
     });
     
-    // Use the correct endpoint that works in your other portal
     const fullAuthUrl = `${authUrl}/auth/sign-in?${params.toString()}`;
-    console.log('Redirecting to:', fullAuthUrl);
+    console.log('Redirecting to Nandi:', fullAuthUrl);
     
     window.location.href = fullAuthUrl;
+  };
+
+  const handleGoogleLogin = () => {
+    console.log('Google OAuth login clicked');
+    
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+    
+    if (!clientId) {
+      alert('Google OAuth not configured. Please contact administrator.');
+      return;
+    }
+    
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: `${baseUrl}/api/auth/google/callback`,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'offline',
+      prompt: 'consent'
+    });
+    
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    console.log('Redirecting to Google:', googleAuthUrl);
+    
+    window.location.href = googleAuthUrl;
   };
 
   const features = [
@@ -90,8 +117,9 @@ export default function LoginPage() {
           </div>
 
           <div style={{ marginTop: '3rem' }}>
+            {/* Nandi SSO Login */}
             <button
-              onClick={handleLogin}
+              onClick={handleNandiLogin}
               style={{
                 width: '100%',
                 padding: '0.875rem',
@@ -101,10 +129,34 @@ export default function LoginPage() {
                 borderRadius: '6px',
                 fontSize: '16px',
                 fontWeight: '500',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                marginBottom: '1rem'
               }}
             >
-              Sign in with SSO
+              Sign in with Nandi SSO
+            </button>
+
+            {/* Google OAuth Login */}
+            <button
+              onClick={handleGoogleLogin}
+              style={{
+                width: '100%',
+                padding: '0.875rem',
+                backgroundColor: '#db4437',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <span>🔑</span>
+              Sign in with Google
             </button>
             
             <p style={{

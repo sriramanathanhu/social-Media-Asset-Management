@@ -16,14 +16,17 @@ services:
       # Database - PostgreSQL
       - DATABASE_URL=${DATABASE_URL}
       
-      # Authentication - Nandi SSO Only
+      # Authentication - Dual Auth Support (Nandi SSO + Google OAuth)
       - NANDI_SSO_URL=${NANDI_SSO_URL}
       - NANDI_APP_ID=${NANDI_APP_ID}
       - NANDI_RETURN_URL=${NANDI_RETURN_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       
       # Public Environment Variables (for frontend)
       - NEXT_PUBLIC_NANDI_SSO_URL=${NEXT_PUBLIC_NANDI_SSO_URL}
       - NEXT_PUBLIC_NANDI_APP_ID=${NEXT_PUBLIC_NANDI_APP_ID}
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
       - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
       
       # Security
