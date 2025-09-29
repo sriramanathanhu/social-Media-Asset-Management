@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const authCode = searchParams.get("auth_code") || searchParams.get("code");
     
     console.log("Auth callback received, auth_code:", authCode ? "present" : "missing");
-    console.log("Environment check:");
+    console.log("Environment check (Nandi Auth only):");
     console.log("- NANDI_SSO_URL:", process.env.NANDI_SSO_URL ? "present" : "missing");
     console.log("- NANDI_APP_ID:", process.env.NANDI_APP_ID ? "present" : "missing");
     console.log("- NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL ? "present" : "missing");
@@ -74,8 +74,12 @@ export async function GET(request: NextRequest) {
 
     console.log("Session token set successfully, redirecting to dashboard");
     
-    // Use correct environment variable for redirect
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL;
+    // Use Nandi Auth base URL for redirect
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      console.error("NEXT_PUBLIC_BASE_URL not configured");
+      return new Response("Server configuration error: missing base URL", { status: 500 });
+    }
     return Response.redirect(`${baseUrl}/dashboard`, 302);
     
   } catch (error) {

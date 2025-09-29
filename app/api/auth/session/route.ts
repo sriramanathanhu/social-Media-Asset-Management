@@ -21,7 +21,7 @@ export async function GET() {
     }
 
     const res = await fetch(
-      `${process.env.NEXT_AUTH_URL}/auth/get-session?client_id=${process.env.NEXT_AUTH_CLIENT_ID}`,
+      `${process.env.NANDI_SSO_URL}/auth/get-session?client_id=${process.env.NANDI_APP_ID}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -96,7 +96,7 @@ export async function DELETE() {
       try {
         // First try to get the actual session from the token
         const sessionRes = await fetch(
-          `${process.env.NEXT_AUTH_URL}/auth/get-session?client_id=${process.env.NEXT_AUTH_CLIENT_ID}`,
+          `${process.env.NANDI_SSO_URL}/auth/get-session?client_id=${process.env.NANDI_APP_ID}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -112,7 +112,7 @@ export async function DELETE() {
         
         // Then logout
         const logoutRes = await fetch(
-          `${process.env.NEXT_AUTH_URL}/auth/logout`,
+          `${process.env.NANDI_SSO_URL}/auth/logout`,
           {
             method: "POST",
             headers: {
@@ -120,7 +120,7 @@ export async function DELETE() {
               cookie: `nandi_session=${sessionToken.value}`,
             },
             body: JSON.stringify({
-              client_id: process.env.NEXT_AUTH_CLIENT_ID,
+              client_id: process.env.NANDI_APP_ID,
               session_token: sessionToken.value
             })
           }

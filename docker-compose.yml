@@ -16,13 +16,14 @@ services:
       # Database - PostgreSQL
       - DATABASE_URL=${DATABASE_URL}
       
-      # Authentication
+      # Authentication - Nandi SSO Only
       - NANDI_SSO_URL=${NANDI_SSO_URL}
       - NANDI_APP_ID=${NANDI_APP_ID}
       - NANDI_RETURN_URL=${NANDI_RETURN_URL}
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
-      - NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL}
-      - NEXT_PUBLIC_AUTH_CLIENT_ID=${NEXT_PUBLIC_AUTH_CLIENT_ID}
+      
+      # Public Environment Variables (for frontend)
+      - NEXT_PUBLIC_NANDI_SSO_URL=${NEXT_PUBLIC_NANDI_SSO_URL}
+      - NEXT_PUBLIC_NANDI_APP_ID=${NEXT_PUBLIC_NANDI_APP_ID}
       - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
       
       # Security

@@ -114,7 +114,7 @@ sudo docker-compose -f docker-compose.prod.yml exec social-media-portal npx ts-n
 | `NANDI_SSO_URL` | Nandi SSO base URL | `https://auth.example.com` |
 | `NANDI_APP_ID` | Your application ID in Nandi | `app-123456` |
 | `ENCRYPTION_KEY` | 32-character encryption key | Generate with: `openssl rand -base64 32 \| head -c 32` |
-| `NEXTAUTH_URL` | Your application URL | `https://socialmedia.example.com` |
+| `NEXT_PUBLIC_BASE_URL` | Your application URL | `https://socialmedia.example.com` |
 
 ### Optional Variables
 

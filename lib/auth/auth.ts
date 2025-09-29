@@ -34,11 +34,12 @@ export async function logout() {
 }
 
 export function getLoginUrl() {
+  // Use Nandi Auth variables only (NextAuth removed)
   const params = new URLSearchParams({
-    client_id: process.env.NEXT_PUBLIC_AUTH_CLIENT_ID || '',
+    client_id: process.env.NEXT_PUBLIC_NANDI_APP_ID || '',
     redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/api/auth/callback`,
     response_type: 'code',
   });
 
-  return `${process.env.NEXT_PUBLIC_AUTH_URL || ''}/auth/authorize?${params.toString()}`;
+  return `${process.env.NEXT_PUBLIC_NANDI_SSO_URL || ''}/auth/authorize?${params.toString()}`;
 }
