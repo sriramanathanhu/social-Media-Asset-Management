@@ -53,8 +53,10 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package*.json ./
 
-# Note: Skip copying pre-generated Prisma client - will be generated at runtime
-# This avoids copy errors and ensures fresh generation for the runtime environment
+# Install only production dependencies including Prisma
+RUN npm ci --only=production --legacy-peer-deps
+
+# Note: Prisma client will be generated at runtime with proper dependencies now available
 
 # Create uploads directory
 RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
