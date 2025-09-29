@@ -24,7 +24,7 @@ COPY . .
 
 # Generate Prisma client with debug
 RUN echo "=== Generating Prisma Client ===" && \
-    npx prisma generate --verbose
+    npx prisma generate
 
 # Check if critical files exist
 RUN echo "=== Checking Critical Files ===" && \
