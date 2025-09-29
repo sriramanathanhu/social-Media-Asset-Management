@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     // Check for error parameters
@@ -12,42 +14,40 @@ export default function LoginPage() {
     const error = urlParams.get('error');
     if (error) {
       console.error('Authentication error:', error);
-      if (error === 'no_auth_code') {
-        alert('Authentication failed: No authorization code received. Please try again.');
-      }
+      router.push(`/api/auth/error?error=${error}`);
     }
 
-    // Check if already authenticated
-    fetch("/api/auth/session")
-      .then((res) => {
-        if (res.ok) {
-          router.push("/dashboard");
-        }
-      })
-      .catch(console.error);
-  }, [router]);
+    // Redirect to dashboard if already authenticated
+    if (status === "authenticated") {
+      router.push("/dashboard");
+    }
+  }, [router, status]);
 
-  const handleLogin = () => {
-    console.log('Nandi Auth login clicked (official implementation)');
+  const handleLogin = async () => {
+    console.log('Keycloak SSO login clicked');
     
-    // Use official Nandi Auth environment variable names
-    const authUrl = process.env.NEXT_PUBLIC_NEXT_AUTH_URL || 'https://auth.kailasa.ai';
-    const clientId = process.env.NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID || '1243-2739-1026-8361';
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    
-    console.log('=== NANDI AUTH DEBUG (Official Implementation) ===');
-    console.log('- NEXT_PUBLIC_NEXT_AUTH_URL:', authUrl);
-    console.log('- NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID:', clientId);
-    console.log('- NEXT_PUBLIC_BASE_URL:', baseUrl);
-    
-    // Use official Nandi Auth URL format (matches the example)
-    const fullAuthUrl = `${authUrl}/auth/sign-in?client_id=${clientId}&redirect_uri=${baseUrl}/api/auth/callback`;
-    
-    console.log('Generated auth URL:', fullAuthUrl);
-    console.log('Redirecting to official Nandi Auth endpoint...');
-    
-    window.location.href = fullAuthUrl;
+    try {
+      await signIn('keycloak', {
+        callbackUrl: '/dashboard'
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   };
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   const features = [
     {
@@ -119,7 +119,7 @@ export default function LoginPage() {
               }}
             >
               <span>🔐</span>
-              Sign in with SSO
+              Sign in with Keycloak SSO
             </button>
             
             <p style={{
@@ -128,7 +128,7 @@ export default function LoginPage() {
               color: '#6b7280',
               marginTop: '0.75rem'
             }}>
-              Choose from multiple login options including Google, Email, and more
+              Secure enterprise authentication through Keycloak SSO
             </p>
             
             <p style={{

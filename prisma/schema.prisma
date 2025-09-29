@@ -11,18 +11,60 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  email       String   @unique
-  name        String
-  ecitizen_id String?
-  role        String   @default("user") // user or admin
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  emailVerified DateTime?
+  image         String?
+  ecitizen_id   String?
+  role          String   @default("user") // user or admin
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // NextAuth.js relations
+  accounts Account[]
+  sessions Session[]
   
-  // Relations
+  // Application relations
   userEcosystems    UserEcosystem[]
   credentialHistory CredentialHistory[] @relation("ChangedBy")
   assignedBy        UserEcosystem[]     @relation("AssignedBy")
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Ecosystem {
@@ -41,9 +83,9 @@ model Ecosystem {
 
 model UserEcosystem {
   id           Int      @id @default(autoincrement())
-  user_id      Int
+  user_id      String
   ecosystem_id Int
-  assigned_by  Int?
+  assigned_by  String?
   assigned_at  DateTime @default(now())
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
@@ -99,7 +141,7 @@ model CredentialHistory {
   field_name   String
   old_value    String?  // Encrypted
   new_value    String?  // Encrypted
-  changed_by   Int
+  changed_by   String
   changed_at   DateTime @default(now())
   created_at   DateTime @default(now())
   
