@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // External packages for server-side use
   serverExternalPackages: ['@prisma/client', 'prisma'],
   eslint: {
     // Only run ESLint on specific directories during production builds
@@ -18,13 +19,11 @@ const nextConfig: NextConfig = {
   },
   // Skip static generation for problematic pages
   trailingSlash: false,
-  // Disable problematic optimizations
-  swcMinify: true,
+  // Disable Next.js branding header
   poweredByHeader: false,
-  // Experimental features for better build stability
+  // Experimental features - removed conflicting optimizePackageImports
   experimental: {
-    // Skip static optimization for dynamic pages
-    optimizePackageImports: ['@prisma/client', 'lucide-react'],
+    // Other experimental features can go here if needed
   },
 };
 

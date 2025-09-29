@@ -6,8 +6,9 @@ RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
-# Copy package files first
+# Copy package files and Prisma schema first
 COPY package*.json ./
+COPY prisma ./prisma/
 
 # Debug environment
 RUN echo "=== Node Environment ===" && \
@@ -42,6 +43,10 @@ RUN touch next-env.d.ts
 # Test build command step by step
 RUN echo "=== Testing Build Command ===" && \
     npx next info
+
+# Set production environment and disable telemetry before build
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Run the actual build
 RUN echo "=== Starting Build Process ===" && \

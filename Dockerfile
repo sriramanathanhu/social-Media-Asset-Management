@@ -27,6 +27,7 @@ RUN touch next-env.d.ts
 
 # Set NODE_ENV to production for build (resolve NODE_ENV warning)
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application (with Prisma generation included)
 RUN npm run build
