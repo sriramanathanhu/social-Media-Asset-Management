@@ -71,12 +71,26 @@ export default function LoginPage() {
     console.log('Base URL:', baseUrl);
     console.log('Redirect URI:', `${baseUrl}/api/auth/callback`);
     console.log('Full auth URL:', fullAuthUrl);
-    console.log('About to redirect to:', fullAuthUrl);
     
-    // Add a small delay to ensure logs are visible
-    setTimeout(() => {
+    // Show user-friendly message about the SSO URL issue
+    const userConfirm = confirm(`⚠️ SSO Configuration Issue
+
+The Nandi SSO URL appears to be incorrect or the service is not accessible:
+${authUrl}
+
+This is likely why you're getting a 404 error.
+
+Please check with your team for:
+1. The correct Nandi SSO base URL 
+2. The correct endpoint path (e.g., /auth/authorize, /auth/sign-in, /login, etc.)
+
+Click OK to try anyway, or Cancel to stay on this page.
+
+Generated URL: ${fullAuthUrl}`);
+    
+    if (userConfirm) {
       window.location.href = fullAuthUrl;
-    }, 100);
+    }
   };
 
   const features = [
