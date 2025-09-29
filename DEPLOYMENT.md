@@ -1,14 +1,45 @@
-# Social Media Portal - Docker Deployment Guide
+# Social Media Portal - Deployment Guide
+
+## ✅ Updated Nandi Auth Implementation
+
+The application has been updated to use the **official Nandi Auth implementation** patterns based on the provided examples.
 
 ## Prerequisites
 
 - Docker Engine 20.10+
 - Docker Compose 2.0+
-- A server with at least 2GB RAM
-- Domain name (for production)
-- SSL certificates (for production)
+- PostgreSQL database
+- Coolify deployment platform (recommended)
 
-## Quick Start (Development)
+## 🔧 Environment Variables (Updated)
+
+Create a `.env` file with these variables:
+
+```bash
+# Database Configuration - PostgreSQL
+DATABASE_URL="postgresql://username:password@postgres:5432/social_media_portal?schema=public"
+
+# Authentication - Nandi Auth (Official Implementation)
+NEXT_AUTH_URL=https://auth.kailasa.ai
+NEXT_AUTH_CLIENT_ID=1243-2739-1026-8361
+AUTH_CLIENT_SECRET=qhDHH98ySeYaYWHKJRG2G3QKXZSVKWC5MLT4
+NEXT_BASE_URL=https://yourdomain.com
+
+# Public Environment Variables (for frontend)
+NEXT_PUBLIC_NEXT_AUTH_URL=https://auth.kailasa.ai
+NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID=1243-2739-1026-8361
+NEXT_PUBLIC_BASE_URL=https://yourdomain.com
+
+# Security
+ENCRYPTION_KEY=your_32_character_encryption_key
+
+# Application Configuration
+NODE_ENV=production
+PORT=3000
+HOSTNAME=0.0.0.0
+```
+
+## 🚀 Quick Start (Development)
 
 1. Clone the repository:
 ```bash
@@ -21,12 +52,7 @@ cd social-media-portal
 cp .env.example .env
 ```
 
-3. Configure `.env` file with your settings:
-```env
-NANDI_SSO_URL=your-nandi-sso-url
-NANDI_APP_ID=your-app-id
-ENCRYPTION_KEY=your-32-character-key
-```
+3. Configure `.env` file with the updated Nandi Auth variables above
 
 4. Build and run:
 ```bash
@@ -105,16 +131,53 @@ sudo docker cp csv-data social-media-portal:/app/
 sudo docker-compose -f docker-compose.prod.yml exec social-media-portal npx ts-node prisma/import-from-csv.ts
 ```
 
-## Environment Variables
+## 🔄 Deployment for Coolify
+
+### 1. Update Environment Variables in Coolify:
+```bash
+NEXT_AUTH_URL=https://auth.kailasa.ai
+NEXT_AUTH_CLIENT_ID=1243-2739-1026-8361
+AUTH_CLIENT_SECRET=qhDHH98ySeYaYWHKJRG2G3QKXZSVKWC5MLT4
+NEXT_BASE_URL=https://yourdomain.com
+
+# Public variables (for frontend)
+NEXT_PUBLIC_NEXT_AUTH_URL=https://auth.kailasa.ai
+NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID=1243-2739-1026-8361
+NEXT_PUBLIC_BASE_URL=https://yourdomain.com
+
+# Database and Security
+DATABASE_URL=postgresql://username:password@postgres:5432/social_media_portal?schema=public
+ENCRYPTION_KEY=your_32_character_encryption_key
+```
+
+### 2. Remove Old Variables:
+- Remove all `NANDI_*` prefixed variables 
+- Remove `GOOGLE_*` OAuth variables (not needed)
+
+### 3. Key Changes Made
+
+#### Environment Variable Names
+- `NANDI_SSO_URL` → `NEXT_AUTH_URL`
+- `NANDI_APP_ID` → `NEXT_AUTH_CLIENT_ID` 
+- `NANDI_CLIENT_SECRET` → `AUTH_CLIENT_SECRET`
+- `NANDI_RETURN_URL` → `NEXT_BASE_URL`
+
+#### Authentication Endpoints
+- Login URL: `{NEXT_AUTH_URL}/auth/sign-in` (simplified format)
+- Token Exchange: `{NEXT_AUTH_URL}/auth/session/exchange-token`
+- Session Check: `{NEXT_AUTH_URL}/auth/get-session`
+
+## Environment Variables Reference
 
 ### Required Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `NANDI_SSO_URL` | Nandi SSO base URL | `https://auth.example.com` |
-| `NANDI_APP_ID` | Your application ID in Nandi | `app-123456` |
+| `NEXT_AUTH_URL` | Nandi Auth base URL | `https://auth.kailasa.ai` |
+| `NEXT_AUTH_CLIENT_ID` | Your client ID in Nandi | `1243-2739-1026-8361` |
+| `AUTH_CLIENT_SECRET` | Your client secret | `qhDHH98ySeYaYWHKJRG2G3QKXZSVKWC5MLT4` |
+| `NEXT_BASE_URL` | Your application URL | `https://yourdomain.com` |
 | `ENCRYPTION_KEY` | 32-character encryption key | Generate with: `openssl rand -base64 32 \| head -c 32` |
-| `NEXT_PUBLIC_BASE_URL` | Your application URL | `https://socialmedia.example.com` |
 
 ### Optional Variables
 

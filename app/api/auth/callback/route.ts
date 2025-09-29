@@ -4,39 +4,25 @@ import type { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const authCode = searchParams.get("auth_code") || searchParams.get("code");
+    const authCode = searchParams.get("auth_code");
     
-    console.log("=== AUTH CALLBACK DEBUG ===");
+    console.log("=== NANDI AUTH CALLBACK (Official Implementation) ===");
     console.log("Full URL:", request.url);
     console.log("Search params:", searchParams.toString());
     console.log("Auth code:", authCode ? "present" : "missing");
     console.log("Environment check:");
-    console.log("- NANDI_SSO_URL:", process.env.NANDI_SSO_URL);
-    console.log("- NANDI_APP_ID:", process.env.NANDI_APP_ID);
-    console.log("- NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL);
+    console.log("- NEXT_AUTH_URL:", process.env.NEXT_AUTH_URL);
+    console.log("- NEXT_AUTH_CLIENT_ID:", process.env.NEXT_AUTH_CLIENT_ID);
+    console.log("- AUTH_CLIENT_SECRET:", process.env.AUTH_CLIENT_SECRET ? "present" : "missing");
 
-    // If no auth code, this might be a direct access to callback
     if (!authCode) {
-      console.error("Missing auth_code in callback - this suggests user didn't go through SSO flow");
-      console.error("Possible issues:");
-      console.error("1. User accessed callback URL directly");
-      console.error("2. SSO service didn't redirect properly");
-      console.error("3. Wrong SSO endpoint or parameters");
-      
-      // Redirect back to home page instead of showing error
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
-      return Response.redirect(`${baseUrl}/?error=no_auth_code`, 302);
+      console.error("No auth_code found in query parameters");
+      return new Response("Missing auth_code", { status: 400 });
     }
 
-    // Validate required environment variables
-    if (!process.env.NANDI_SSO_URL || !process.env.NANDI_APP_ID) {
-      console.error("Missing required environment variables");
-      return new Response("Server configuration error", { status: 500 });
-    }
-
-    // Exchange auth code for session token with Nandi SSO
-    const tokenExchangeUrl = `${process.env.NANDI_SSO_URL}/auth/session/token`;
-    console.log("Calling token exchange:", tokenExchangeUrl);
+    // Use official Nandi Auth token exchange endpoint
+    const tokenExchangeUrl = `${process.env.NEXT_AUTH_URL}/auth/session/exchange-token`;
+    console.log("Calling official token exchange:", tokenExchangeUrl);
 
     const res = await fetch(tokenExchangeUrl, {
       method: "POST",
@@ -44,8 +30,8 @@ export async function GET(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        client_id: process.env.NANDI_APP_ID,
-        client_secret: process.env.NANDI_CLIENT_SECRET,
+        client_id: process.env.NEXT_AUTH_CLIENT_ID,
+        client_secret: process.env.AUTH_CLIENT_SECRET,
         code: authCode,
       }),
     });
@@ -84,15 +70,11 @@ export async function GET(request: NextRequest) {
       maxAge: maxAge,
     });
 
-    console.log("Session token set successfully, redirecting to dashboard");
+    console.log("Session token set successfully, redirecting to home");
     
-    // Use Nandi Auth base URL for redirect
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    if (!baseUrl) {
-      console.error("NEXT_PUBLIC_BASE_URL not configured");
-      return new Response("Server configuration error: missing base URL", { status: 500 });
-    }
-    return Response.redirect(`${baseUrl}/dashboard`, 302);
+    // Use official Nandi Auth redirect (redirect to home, not dashboard)
+    const baseUrl = process.env.NEXT_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL;
+    return Response.redirect(`${baseUrl}`, 302);
     
   } catch (error) {
     console.error("Callback error:", error);

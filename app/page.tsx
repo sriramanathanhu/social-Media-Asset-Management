@@ -28,69 +28,25 @@ export default function LoginPage() {
   }, [router]);
 
   const handleLogin = () => {
-    console.log('Nandi SSO login clicked (includes Google login option)');
+    console.log('Nandi Auth login clicked (official implementation)');
     
-    // Debug environment variables
-    console.log('Environment variables check:');
-    console.log('- NEXT_PUBLIC_NANDI_SSO_URL:', process.env.NEXT_PUBLIC_NANDI_SSO_URL);
-    console.log('- NEXT_PUBLIC_NANDI_APP_ID:', process.env.NEXT_PUBLIC_NANDI_APP_ID);
-    console.log('- NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL);
-    
-    const authUrl = process.env.NEXT_PUBLIC_NANDI_SSO_URL || 'https://auth.kailasa.ai';
-    const clientId = process.env.NEXT_PUBLIC_NANDI_APP_ID || '1243-2739-1026-8361';
+    // Use official Nandi Auth environment variable names
+    const authUrl = process.env.NEXT_PUBLIC_NEXT_AUTH_URL || 'https://auth.kailasa.ai';
+    const clientId = process.env.NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID || '1243-2739-1026-8361';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
     
-    // Additional validation with detailed error
-    if (!clientId || clientId === '1243-2739-1026-8361') {
-      console.error('Environment variables not properly configured:');
-      console.error('- Auth URL:', authUrl);
-      console.error('- Client ID:', clientId);
-      console.error('- Base URL:', baseUrl);
-      
-      // Still try with fallback values
-      if (clientId === '1243-2739-1026-8361') {
-        console.log('Using fallback client ID - proceeding with authentication');
-      } else {
-        alert('Authentication not configured. Please contact administrator.\n\nDEBUG: NEXT_PUBLIC_NANDI_APP_ID is missing from environment variables.');
-        return;
-      }
-    }
+    console.log('=== NANDI AUTH DEBUG (Official Implementation) ===');
+    console.log('- NEXT_PUBLIC_NEXT_AUTH_URL:', authUrl);
+    console.log('- NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID:', clientId);
+    console.log('- NEXT_PUBLIC_BASE_URL:', baseUrl);
     
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: `${baseUrl}/api/auth/callback`,
-      response_type: 'code', // Standard OAuth parameter
-      scope: 'openid email profile', // Request basic profile info
-    });
+    // Use official Nandi Auth URL format (matches the example)
+    const fullAuthUrl = `${authUrl}/auth/sign-in?client_id=${clientId}&redirect_uri=${baseUrl}/api/auth/callback`;
     
-    // Try the standard OAuth authorize endpoint
-    const fullAuthUrl = `${authUrl}/auth/authorize?${params.toString()}`;
-    console.log('=== FRONTEND AUTH DEBUG ===');
-    console.log('Auth URL:', authUrl);
-    console.log('Client ID:', clientId);
-    console.log('Base URL:', baseUrl);
-    console.log('Redirect URI:', `${baseUrl}/api/auth/callback`);
-    console.log('Full auth URL:', fullAuthUrl);
+    console.log('Generated auth URL:', fullAuthUrl);
+    console.log('Redirecting to official Nandi Auth endpoint...');
     
-    // Show user-friendly message about the SSO URL issue
-    const userConfirm = confirm(`⚠️ SSO Configuration Issue
-
-The Nandi SSO URL appears to be incorrect or the service is not accessible:
-${authUrl}
-
-This is likely why you're getting a 404 error.
-
-Please check with your team for:
-1. The correct Nandi SSO base URL 
-2. The correct endpoint path (e.g., /auth/authorize, /auth/sign-in, /login, etc.)
-
-Click OK to try anyway, or Cancel to stay on this page.
-
-Generated URL: ${fullAuthUrl}`);
-    
-    if (userConfirm) {
-      window.location.href = fullAuthUrl;
-    }
+    window.location.href = fullAuthUrl;
   };
 
   const features = [
