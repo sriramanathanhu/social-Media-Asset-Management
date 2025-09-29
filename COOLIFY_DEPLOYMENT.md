@@ -143,12 +143,22 @@ postgresql://username:password@postgres:5432/social_media_portal?schema=public
 - Ensure PORT 3000 is properly exposed
 
 #### 4. Migration Errors
-**Error:** `Database migration failed`
+**Error:** `Database migration failed` or `P3019: The datasource provider 'postgresql' specified in your schema does not match the one specified in the migration_lock.toml, 'sqlite'`
 
 **Solutions:**
-- For first deployment: Database schema will be created automatically
+- **This is expected for first PostgreSQL deployment** - the app will automatically use `prisma db push` instead
+- The startup script will handle SQLite→PostgreSQL migration conflicts automatically
 - Check database permissions (CREATE, ALTER permissions required)
 - Verify database exists and is accessible
+
+#### 5. Redirect Loop (ERR_TOO_MANY_REDIRECTS)
+**Error:** `This page isn't working - redirected you too many times`
+
+**Solutions:**
+- **This was fixed in the latest version** - authentication middleware improved
+- Clear browser cookies and cache
+- Check that authentication environment variables are properly set
+- Verify `/api/auth/session` endpoint is accessible
 
 ### Debugging Steps
 

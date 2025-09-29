@@ -110,10 +110,12 @@ if ! npx prisma migrate deploy 2>&1 | tee /tmp/migration.log; then
   log "3. Ensure DATABASE_URL credentials are correct"
   log "4. Check if this is the first deployment (may need 'prisma db push')"
   
-  # For first-time deployments, try db push instead
-  log "Attempting 'prisma db push' for first-time deployment..."
+  # For first-time deployments or SQLite->PostgreSQL migration conflicts, use db push
+  log "Migration failed. Attempting 'prisma db push' for PostgreSQL deployment..."
+  log "This will create the schema directly without using migration files"
   if npx prisma db push --accept-data-loss 2>&1 | tee /tmp/push.log; then
     log_success "Database schema synchronized with 'db push'"
+    log "Note: Migration history will be reset for PostgreSQL compatibility"
   else
     log_error "Both migration and db push failed. Check database configuration."
     cat /tmp/push.log
