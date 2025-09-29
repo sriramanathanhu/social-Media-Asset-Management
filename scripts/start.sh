@@ -132,4 +132,16 @@ log "Starting Next.js application..."
 log "Application will be available on port 3000"
 log "Health check endpoint: http://localhost:3000/api/health"
 
-exec node server.js
+# Check if standalone server.js exists in current directory or in .next/standalone
+if [ -f "./server.js" ]; then
+  log "Found server.js in current directory, starting..."
+  exec node server.js
+elif [ -f "./.next/standalone/server.js" ]; then
+  log "Found server.js in .next/standalone, starting..."
+  exec node ./.next/standalone/server.js
+else
+  log_error "server.js not found! Checking available files..."
+  ls -la
+  log "Trying to start with npm start as fallback..."
+  exec npm start
+fi

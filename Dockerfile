@@ -74,6 +74,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+# Ensure Next.js listens on all interfaces in Docker
+ENV NEXT_PORT=3000
 
 # Health check - Use curl for better compatibility with Coolify
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
