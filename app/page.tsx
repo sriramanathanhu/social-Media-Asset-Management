@@ -20,13 +20,30 @@ export default function LoginPage() {
   const handleLogin = () => {
     console.log('Nandi SSO login clicked (includes Google login option)');
     
+    // Debug environment variables
+    console.log('Environment variables check:');
+    console.log('- NEXT_PUBLIC_NANDI_SSO_URL:', process.env.NEXT_PUBLIC_NANDI_SSO_URL);
+    console.log('- NEXT_PUBLIC_NANDI_APP_ID:', process.env.NEXT_PUBLIC_NANDI_APP_ID);
+    console.log('- NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL);
+    
     const authUrl = process.env.NEXT_PUBLIC_NANDI_SSO_URL || 'https://auth.kailasa.ai';
-    const clientId = process.env.NEXT_PUBLIC_NANDI_APP_ID;
+    const clientId = process.env.NEXT_PUBLIC_NANDI_APP_ID || '1243-2739-1026-8361';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
     
-    if (!clientId) {
-      alert('Authentication not configured. Please contact administrator.');
-      return;
+    // Additional validation with detailed error
+    if (!clientId || clientId === '1243-2739-1026-8361') {
+      console.error('Environment variables not properly configured:');
+      console.error('- Auth URL:', authUrl);
+      console.error('- Client ID:', clientId);
+      console.error('- Base URL:', baseUrl);
+      
+      // Still try with fallback values
+      if (clientId === '1243-2739-1026-8361') {
+        console.log('Using fallback client ID - proceeding with authentication');
+      } else {
+        alert('Authentication not configured. Please contact administrator.\n\nDEBUG: NEXT_PUBLIC_NANDI_APP_ID is missing from environment variables.');
+        return;
+      }
     }
     
     const params = new URLSearchParams({
@@ -36,6 +53,7 @@ export default function LoginPage() {
     
     const fullAuthUrl = `${authUrl}/auth/sign-in?${params.toString()}`;
     console.log('Redirecting to Nandi SSO (includes Google login):', fullAuthUrl);
+    console.log('Full auth URL:', fullAuthUrl);
     
     window.location.href = fullAuthUrl;
   };
