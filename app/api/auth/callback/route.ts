@@ -6,28 +6,40 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const authCode = searchParams.get("auth_code") || searchParams.get("code");
     
-    console.log("Auth callback received");
+    console.log("Auth callback received, auth_code:", authCode ? "present" : "missing");
+    console.log("Environment check:");
+    console.log("- NANDI_SSO_URL:", process.env.NANDI_SSO_URL ? "present" : "missing");
+    console.log("- NANDI_APP_ID:", process.env.NANDI_APP_ID ? "present" : "missing");
+    console.log("- NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL ? "present" : "missing");
 
     if (!authCode) {
+      console.error("Missing auth_code in callback");
       return new Response("Missing auth_code", { status: 400 });
     }
 
-    const res = await fetch(
-      `${process.env.NEXT_AUTH_URL}/auth/session/token`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          client_id: process.env.NEXT_AUTH_CLIENT_ID,
-          client_secret: process.env.AUTH_CLIENT_SECRET,
-          code: authCode,
-        }),
-      }
-    );
+    // Validate required environment variables
+    if (!process.env.NANDI_SSO_URL || !process.env.NANDI_APP_ID) {
+      console.error("Missing required environment variables");
+      return new Response("Server configuration error", { status: 500 });
+    }
+
+    // Exchange auth code for session token with Nandi SSO
+    const tokenExchangeUrl = `${process.env.NANDI_SSO_URL}/auth/session/token`;
+    console.log("Calling token exchange:", tokenExchangeUrl);
+
+    const res = await fetch(tokenExchangeUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: process.env.NANDI_APP_ID,
+        code: authCode,
+      }),
+    });
 
     const data = await res.json();
+    console.log("Token exchange response status:", res.status);
 
     if (res.status !== 200) {
       console.error("Token exchange failed:", data);
@@ -60,9 +72,14 @@ export async function GET(request: NextRequest) {
       maxAge: maxAge,
     });
 
-    return Response.redirect(`${process.env.NEXT_BASE_URL}/dashboard`, 302);
+    console.log("Session token set successfully, redirecting to dashboard");
+    
+    // Use correct environment variable for redirect
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL;
+    return Response.redirect(`${baseUrl}/dashboard`, 302);
+    
   } catch (error) {
     console.error("Callback error:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    return new Response(`Internal Server Error: ${error.message}`, { status: 500 });
   }
 }
