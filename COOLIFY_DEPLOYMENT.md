@@ -1,20 +1,67 @@
 # Coolify Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Social Media Portal using Coolify.
+This guide will help you deploy the Social Media Portal application on Coolify with PostgreSQL.
 
-## 🚀 Pre-Deployment Setup
+## Prerequisites
 
-### 1. Environment Variables Configuration
+- Coolify instance running
+- Access to Coolify dashboard
+- Git repository with your code
 
-Set the following environment variables in your Coolify application:
+## Step 1: Set Up PostgreSQL Database Service
 
-#### Required Environment Variables
+1. **Create PostgreSQL Service:**
+   - Go to your Coolify dashboard
+   - Click "New Resource" → "Database" → "PostgreSQL"
+   - Set service name: `postgres` (this will be used in DATABASE_URL)
+   - Set database name: `social_media_portal`
+   - Set username and password (remember these for DATABASE_URL)
+   - Deploy the PostgreSQL service
 
-```env
-# Database Configuration - PostgreSQL (Required)
-DATABASE_URL=postgresql://username:password@host:5432/social_media_portal
+2. **Note Database Connection Details:**
+   - Service hostname: `postgres` (or your chosen service name)
+   - Port: `5432` (default)
+   - Database: `social_media_portal`
+   - Username: (what you set)
+   - Password: (what you set)
 
-# Authentication - Nandi SSO
+## Step 2: Create Application Service
+
+1. **Create New Application:**
+   - Click "New Resource" → "Application"
+   - Choose "Git Repository"
+   - Connect your repository: `sriramanathanhu/social-Media-Asset-Management`
+   - Branch: `main`
+
+2. **Configure Build Settings:**
+   - Build Pack: `Dockerfile`
+   - Dockerfile: `Dockerfile` (or `Dockerfile.debug` for detailed logs)
+   - Build Command: (leave empty)
+
+## Step 3: Configure Environment Variables
+
+Set these environment variables in Coolify:
+
+### Required Variables
+
+```bash
+# Database Configuration
+DATABASE_URL=postgresql://your_username:your_password@postgres:5432/social_media_portal?schema=public
+
+# Application Settings
+NODE_ENV=production
+PORT=3000
+HOSTNAME=0.0.0.0
+NEXT_TELEMETRY_DISABLED=1
+
+# Security (generate a secure 32-character key)
+ENCRYPTION_KEY=your_32_character_encryption_key_here
+```
+
+### Authentication Variables (Optional)
+
+```bash
+# Nandi SSO Configuration
 NANDI_SSO_URL=https://auth.kailasa.ai
 NANDI_APP_ID=your_app_id_here
 NANDI_RETURN_URL=https://yourdomain.com/api/auth/sso/callback
@@ -24,197 +71,149 @@ NEXTAUTH_URL=https://yourdomain.com
 NEXT_PUBLIC_AUTH_URL=https://auth.kailasa.ai
 NEXT_PUBLIC_AUTH_CLIENT_ID=your_client_id_here
 NEXT_PUBLIC_BASE_URL=https://yourdomain.com
-
-# Security (Generate a secure 32-character key)
-ENCRYPTION_KEY=your_32_character_encryption_key_here
-
-# Application Configuration
-NODE_ENV=production
-PORT=3000
-HOSTNAME=0.0.0.0
-NEXT_TELEMETRY_DISABLED=1
 ```
 
-### 2. Database Setup
+## Step 4: Important DATABASE_URL Format
 
-#### PostgreSQL Setup (Required)
-
-**Option A: Using Coolify's Built-in PostgreSQL Service**
-1. In your Coolify project, add a **PostgreSQL service**:
-   - Click "New Service" → "PostgreSQL"
-   - Choose PostgreSQL version (14 or higher recommended)
-   - Set database name: `social_media_portal`
-   - Set username and strong password
-   - Deploy the PostgreSQL service
-
-2. **Get the connection string**:
-   - Once deployed, copy the internal connection URL
-   - Format: `postgresql://username:password@postgres-service:5432/social_media_portal`
-
-3. **Set DATABASE_URL** in your application environment variables
-
-**Option B: External PostgreSQL Provider**
-You can use external providers like:
-- **Supabase** (postgres://...)
-- **Railway** (postgres://...)
-- **AWS RDS** (postgres://...)
-- **Google Cloud SQL** (postgres://...)
-
-**Database Requirements:**
-- PostgreSQL 12+ (14+ recommended)
-- Database name: `social_media_portal`
-- UTF8 encoding
-- At least 100MB storage (grows with data)
-
-## 📋 Coolify Configuration
-
-### 1. Application Setup
-
-1. **Create New Application** in Coolify
-2. **Source**: Connect your Git repository
-3. **Build Pack**: Docker
-4. **Dockerfile**: Uses the existing `Dockerfile` in the project root
-
-### 2. Domain Configuration
-
-1. Set your custom domain in Coolify
-2. Enable SSL/TLS certificate
-3. Coolify will handle the reverse proxy automatically (no nginx needed)
-
-### 3. Resource Allocation
-
-**Recommended Resources:**
-- **CPU**: 1-2 cores
-- **Memory**: 1-2 GB RAM
-- **Storage**: 10-20 GB (depending on database size)
-
-### 4. Health Check Configuration
-
-The application includes a built-in health check at `/api/health`
-
-Coolify will automatically detect and use the Docker health check:
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
+The DATABASE_URL format for Coolify is:
+```
+postgresql://username:password@postgres:5432/social_media_portal?schema=public
 ```
 
-## 🔧 Deployment Process
+**Key points:**
+- Use `postgres` as hostname (your PostgreSQL service name)
+- Replace `username` and `password` with your actual PostgreSQL credentials
+- The database name should match what you created in Step 1
 
-### 1. Build Configuration
+## Step 5: Deploy Application
 
-The Docker build process:
-1. **Build Stage**: Installs dependencies, generates Prisma client, builds Next.js app
-2. **Production Stage**: Creates optimized production image
-3. **Startup**: Runs database migrations and starts the application
+1. **Deploy:**
+   - Click "Deploy" in the application dashboard
+   - Wait for build to complete (should take 1-2 minutes)
 
-### 2. Database Migration
+2. **Monitor Deployment:**
+   - Watch the build logs for any errors
+   - Check the application logs after deployment
 
-The startup script automatically:
-1. Waits for PostgreSQL to be ready (if using PostgreSQL)
-2. Runs `prisma migrate deploy`
-3. Generates Prisma client
-4. Starts the Next.js application
+## Step 6: Verify Deployment
 
-### 3. Persistent Data
+1. **Check Health:**
+   - Visit: `https://yourdomain.com/api/health`
+   - Should return: `{"status":"healthy","database":"connected"}`
 
-Configure persistent storage in Coolify for:
-- Mount `/app/uploads` for file uploads (if using file upload features)
+2. **Access Application:**
+   - Visit your application URL
+   - Should load the dashboard
 
-## 🛠️ Post-Deployment
-
-### 1. Initial Setup
-
-1. Access your deployed application
-2. The first user to log in via SSO will be created as an admin
-3. Create ecosystems and assign users as needed
-
-### 2. Database Seeding (Optional)
-
-If you want to import sample data:
-```bash
-# Access the container via Coolify terminal or SSH
-# Run the import script
-npm run db:seed
-```
-
-**Note**: The database will be automatically migrated on startup, so no manual migration is needed.
-
-### 3. Monitoring
-
-Monitor your application through:
-- Coolify dashboard
-- Application logs
-- Health check endpoint: `https://yourdomain.com/api/health`
-
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-1. **Database Connection Failed**
-   - Verify `DATABASE_URL` is correct
-   - Ensure database server is accessible
-   - Check network connectivity
+#### 1. Database Authentication Failed (P1000)
+**Error:** `Authentication failed against database server`
 
-2. **Authentication Issues**
-   - Verify all Nandi SSO environment variables
-   - Check that `NANDI_RETURN_URL` matches your domain
-   - Ensure `ENCRYPTION_KEY` is exactly 32 characters
+**Solutions:**
+- Verify DATABASE_URL username and password are correct
+- Check PostgreSQL service is running and accessible
+- Ensure database `social_media_portal` exists
+- Try recreating PostgreSQL service if needed
 
-3. **Build Failures**
-   - Check if all dependencies are properly installed
-   - Verify Prisma schema is valid
-   - Review build logs in Coolify
+#### 2. Database Not Ready
+**Error:** `PostgreSQL is unavailable`
 
-### Debug Commands
+**Solutions:**
+- Ensure PostgreSQL service is deployed and running
+- Check service name matches DATABASE_URL hostname
+- Verify network connectivity between services
 
-```bash
-# Check application status
-curl https://yourdomain.com/api/health
+#### 3. Healthcheck Failing
+**Error:** `connect ECONNREFUSED`
 
-# View logs
-docker logs your_container_name
+**Solutions:**
+- Check if application started successfully in logs
+- Verify database migrations completed
+- Ensure PORT 3000 is properly exposed
 
-# Access container shell
-docker exec -it your_container_name sh
+#### 4. Migration Errors
+**Error:** `Database migration failed`
 
-# Check database connection
-npx prisma db pull
-```
+**Solutions:**
+- For first deployment: Database schema will be created automatically
+- Check database permissions (CREATE, ALTER permissions required)
+- Verify database exists and is accessible
 
-## 🔄 Updates and Maintenance
+### Debugging Steps
 
-### Deploying Updates
+1. **Check Application Logs:**
+   ```bash
+   # In Coolify dashboard, check application logs for detailed error messages
+   ```
 
-1. Push changes to your Git repository
-2. Coolify will automatically trigger a new deployment
-3. Zero-downtime deployment ensures continuous availability
+2. **Use Debug Dockerfile:**
+   - Change Dockerfile to `Dockerfile.debug` for verbose build logs
+   - Redeploy to get detailed information
 
-### Database Migrations
+3. **Verify Database Connection:**
+   ```bash
+   # From Coolify terminal or logs, check:
+   # 1. PostgreSQL service status
+   # 2. Network connectivity between services
+   # 3. Database credentials
+   ```
 
-Database migrations run automatically during deployment via the startup script.
+4. **Test Health Endpoint:**
+   ```bash
+   curl https://yourdomain.com/api/health
+   ```
 
-### Backup Strategy
+## Database Schema
 
-For production deployments:
-1. **PostgreSQL Backups**: Use Coolify's built-in PostgreSQL backup features
-2. **External Backups**: Set up `pg_dump` scheduled backups for external PostgreSQL
-3. **Application Data**: Back up uploaded files if using file uploads
-4. Test backup restoration procedures regularly
+The application will automatically create all required tables on first deployment using Prisma migrations. The schema includes:
 
-## 📚 Additional Resources
+- Users
+- Platforms (social media accounts)
+- Ecosystems (groupings of platforms)
+- User-Ecosystem relationships
+- Platform history and credentials
 
-- [Coolify Documentation](https://coolify.io/docs)
-- [Next.js Deployment](https://nextjs.org/docs/deployment)
-- [Prisma Production Guide](https://www.prisma.io/docs/guides/deployment)
+## Security Notes
 
-## 🎯 Production Optimizations
+1. **Generate Secure Keys:**
+   ```bash
+   # Generate a secure encryption key:
+   openssl rand -base64 32
+   ```
 
-The application is pre-configured with:
-- ✅ Docker multi-stage builds for smaller images
-- ✅ Prisma client generation optimization
-- ✅ Next.js standalone output for better performance
-- ✅ Health checks for monitoring
-- ✅ Non-root user for security
-- ✅ Automatic database migrations
-- ✅ Production environment variables
-- ✅ Removed unnecessary nginx (Coolify handles reverse proxy)
+2. **Environment Variables:**
+   - Never commit actual credentials to Git
+   - Use Coolify's environment variable system
+   - Verify sensitive data is properly masked in logs
+
+## Performance Optimization
+
+1. **Database Connection Pooling:**
+   - Already configured in Prisma client
+   - No additional setup required
+
+2. **Application Caching:**
+   - Next.js automatic static optimization enabled
+   - Standalone output for optimal Docker performance
+
+3. **Health Monitoring:**
+   - Health endpoint available at `/api/health`
+   - Automatic container restart on failures
+
+## Scaling
+
+- Application is stateless and can be scaled horizontally
+- Database connection pooling handles multiple instances
+- Use Coolify's scaling features as needed
+
+## Support
+
+If you encounter issues:
+
+1. Check this guide's troubleshooting section
+2. Review application and database logs in Coolify
+3. Ensure all environment variables are set correctly
+4. Verify PostgreSQL service is healthy and accessible
