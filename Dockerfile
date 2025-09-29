@@ -6,19 +6,17 @@ RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and Prisma schema BEFORE installing dependencies
 COPY package*.json ./
+COPY prisma ./prisma/
 
 # Set NODE_ENV to development for build (includes devDependencies)
 ENV NODE_ENV=development
 
-# Install all dependencies
+# Install all dependencies (no postinstall script now)
 RUN npm ci --legacy-peer-deps
 
-# Copy prisma schema first
-COPY prisma ./prisma/
-
-# Generate Prisma client
+# Generate Prisma client AFTER dependencies are installed
 RUN npx prisma generate
 
 # Copy all source code

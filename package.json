@@ -14,7 +14,6 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "db:import": "tsx prisma/import-from-csv.ts",
-    "postinstall": "prisma generate",
     "prod:start": "NODE_ENV=production node server.js"
   },
   "prisma": {
