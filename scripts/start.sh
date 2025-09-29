@@ -97,32 +97,24 @@ fi
 
 log_success "Prisma client generated successfully"
 
-# Run database migrations with detailed error reporting
-log "Running database migrations..."
-if ! npx prisma migrate deploy 2>&1 | tee /tmp/migration.log; then
-  log_error "Database migration failed!"
-  log "Migration error details:"
-  cat /tmp/migration.log
+# Run database setup - use db push for PostgreSQL (no migration files)
+log "Setting up database schema with Prisma..."
+log "Using 'prisma db push' for PostgreSQL deployment (bypassing SQLite migration files)"
+
+if npx prisma db push --accept-data-loss 2>&1 | tee /tmp/push.log; then
+  log_success "Database schema synchronized successfully"
+  log "All tables and indexes created in PostgreSQL"
+else
+  log_error "Database schema creation failed!"
+  log "Error details:"
+  cat /tmp/push.log
   
   log "Common solutions:"
   log "1. Check if the database user has CREATE/ALTER permissions"
   log "2. Verify the database '$DB_NAME' exists and is accessible"
   log "3. Ensure DATABASE_URL credentials are correct"
-  log "4. Check if this is the first deployment (may need 'prisma db push')"
-  
-  # For first-time deployments or SQLite->PostgreSQL migration conflicts, use db push
-  log "Migration failed. Attempting 'prisma db push' for PostgreSQL deployment..."
-  log "This will create the schema directly without using migration files"
-  if npx prisma db push --accept-data-loss 2>&1 | tee /tmp/push.log; then
-    log_success "Database schema synchronized with 'db push'"
-    log "Note: Migration history will be reset for PostgreSQL compatibility"
-  else
-    log_error "Both migration and db push failed. Check database configuration."
-    cat /tmp/push.log
-    exit 1
-  fi
-else
-  log_success "Database migrations completed successfully"
+  log "4. Check PostgreSQL service is running in Coolify"
+  exit 1
 fi
 
 # Validate database setup
