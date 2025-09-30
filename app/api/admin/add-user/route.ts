@@ -1,7 +1,59 @@
 import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 
+async function checkAdminAuth() {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("nandi_session");
+    
+    if (!sessionToken) {
+      return { authenticated: false, error: "No session token" };
+    }
+
+    const res = await fetch(
+      `${process.env.NEXT_AUTH_URL}/auth/get-session?client_id=${process.env.NEXT_AUTH_CLIENT_ID}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          cookie: `nandi_session=${sessionToken.value}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      return { authenticated: false, error: "Invalid session" };
+    }
+
+    const data = await res.json();
+    const userEmail = data.user?.email || data.email;
+    
+    if (!userEmail) {
+      return { authenticated: false, error: "No email in session" };
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { email: userEmail.toLowerCase() }
+    });
+    
+    if (!dbUser || dbUser.role !== 'admin') {
+      return { authenticated: false, error: "Admin role required" };
+    }
+
+    return { authenticated: true, user: dbUser };
+  } catch (error) {
+    return { authenticated: false, error: "Authentication failed" };
+  }
+}
+
 export async function POST(request: NextRequest) {
+  const authCheck = await checkAdminAuth();
+  if (!authCheck.authenticated) {
+    return Response.json({
+      error: authCheck.error
+    }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { email, name, role = 'user' } = body;
@@ -53,6 +105,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  const authCheck = await checkAdminAuth();
+  if (!authCheck.authenticated) {
+    return Response.json({
+      error: authCheck.error
+    }, { status: 401 });
+  }
+
   try {
     // List all users
     const users = await prisma.user.findMany({

@@ -1,20 +1,56 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SetupPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState("");
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     email: "",
     name: "",
     role: "user"
   });
+  const router = useRouter();
 
   useEffect(() => {
-    fetchUsers();
+    checkAuthentication();
   }, []);
+
+  const checkAuthentication = async () => {
+    try {
+      const res = await fetch('/api/auth/session');
+      const data = await res.json();
+      
+      if (data.authenticated && data.user?.role === 'admin') {
+        setIsAuthenticated(true);
+        setUserRole(data.user.role);
+        fetchUsers();
+      } else if (data.authenticated && data.user?.role !== 'admin') {
+        setMessage("❌ Access denied. Admin role required.");
+        setCheckingAuth(false);
+        return;
+      } else {
+        router.push('/login');
+        return;
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.push('/login');
+      return;
+    }
+    setCheckingAuth(false);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUsers();
+    }
+  }, [isAuthenticated]);
 
   const fetchUsers = async () => {
     try {
@@ -86,6 +122,64 @@ export default function SetupPage() {
       setLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        backgroundColor: '#f5f5f5', 
+        padding: '2rem',
+        fontFamily: 'system-ui, sans-serif',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', marginBottom: '1rem' }}>🔐 Checking authentication...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        backgroundColor: '#f5f5f5', 
+        padding: '2rem',
+        fontFamily: 'system-ui, sans-serif',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ 
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '2rem',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          textAlign: 'center'
+        }}>
+          <h1 style={{ color: '#dc3545', marginBottom: '1rem' }}>🚫 Access Denied</h1>
+          <p style={{ color: '#666', marginBottom: '1rem' }}>
+            {message || "Admin authentication required to access user management."}
+          </p>
+          <button
+            onClick={() => router.push('/login')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#0066cc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 
