@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { requireAuth, requireAdmin } from '@/lib/utils/auth';
 
 // GET /api/ecosystems - List all ecosystems (filtered for non-admin users)
 export async function GET(request: NextRequest) {
   try {
     // Get user session
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
-      headers: {
-        cookie: request.headers.get('cookie') || '',
-      },
-    });
-    
-    if (!sessionRes.ok) {
+    const auth = await requireAuth();
+    if (!auth.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    const session = await sessionRes.json();
-    
-    if (!session.user) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
+        { error: auth.error },
         { status: 401 }
       );
     }
@@ -61,9 +48,9 @@ export async function GET(request: NextRequest) {
     }
 
     // For non-admin users, filter by assigned ecosystems
-    if (session.user.role !== 'admin') {
+    if (auth.user.role !== 'admin') {
       const userEcosystems = await prisma.userEcosystem.findMany({
-        where: { user_id: session.user.dbId },
+        where: { user_id: auth.user.id },
         select: { ecosystem_id: true }
       });
       
@@ -120,25 +107,11 @@ export async function GET(request: NextRequest) {
 // POST /api/ecosystems - Create a new ecosystem (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
-      headers: {
-        cookie: request.headers.get('cookie') || '',
-      },
-    });
-    
-    if (!sessionRes.ok) {
+    const auth = await requireAdmin();
+    if (!auth.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    const session = await sessionRes.json();
-    
-    if (!session.user || session.user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only admin users can create ecosystems' },
-        { status: 403 }
+        { error: auth.error },
+        { status: auth.error === "Admin role required" ? 403 : 401 }
       );
     }
 

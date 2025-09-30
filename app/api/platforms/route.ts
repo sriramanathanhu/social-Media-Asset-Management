@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
 import { buildSearchConditions } from '@/lib/utils/search';
+import { requireAuth } from '@/lib/utils/auth';
 
 // GET /api/platforms - List platforms for an ecosystem
 export async function GET(request: NextRequest) {
@@ -112,33 +113,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has access to this ecosystem
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
-      headers: {
-        cookie: request.headers.get('cookie') || '',
-      },
-    });
-    
-    if (!sessionRes.ok) {
+    const auth = await requireAuth();
+    if (!auth.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    const session = await sessionRes.json();
-    
-    if (!session.user) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
+        { error: auth.error },
         { status: 401 }
       );
     }
 
     // For non-admin users, check if they have access to this ecosystem
-    if (session.user.role !== 'admin') {
+    if (auth.user.role !== 'admin') {
       const userEcosystems = await prisma.userEcosystem.findMany({
         where: { 
-          user_id: session.user.dbId,
+          user_id: auth.user.id,
           ecosystem_id: ecosystem_id
         }
       });

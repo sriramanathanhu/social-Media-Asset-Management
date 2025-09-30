@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { requireAdmin } from "@/lib/utils/auth";
 
 export async function GET(request: NextRequest) {
   try {
     // Check if user is admin
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
-      headers: {
-        cookie: request.headers.get('cookie') || '',
-      },
-    });
-    
-    if (!sessionRes.ok) {
+    const auth = await requireAdmin();
+    if (!auth.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    const session = await sessionRes.json();
-    
-    if (!session.user || session.user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only admin users can access user list' },
-        { status: 403 }
+        { error: auth.error },
+        { status: auth.error === "Admin role required" ? 403 : 401 }
       );
     }
 
@@ -100,25 +87,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check if user is admin
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
-      headers: {
-        cookie: request.headers.get('cookie') || '',
-      },
-    });
-    
-    if (!sessionRes.ok) {
+    const auth = await requireAdmin();
+    if (!auth.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    const session = await sessionRes.json();
-    
-    if (!session.user || session.user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only admin users can create users' },
-        { status: 403 }
+        { error: auth.error },
+        { status: auth.error === "Admin role required" ? 403 : 401 }
       );
     }
 
