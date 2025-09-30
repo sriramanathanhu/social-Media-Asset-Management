@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ id: number; name: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState<{
     summary: {
@@ -63,25 +65,27 @@ export default function DashboardPage() {
   const [showOnlyConfigured, setShowOnlyConfigured] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => {
-        if (!res.ok) throw new Error("Not authenticated");
-        return res.json();
-      })
-      .then((session) => {
-        if (session.user) {
-          setUser(session.user);
-          if (session.user.role === 'admin') {
-            fetchStats();
-          } else {
-            setLoading(false);
-          }
-        } else {
-          router.push("/");
-        }
-      })
-      .catch(() => router.push("/"));
-  }, [router]);
+    if (status === "loading") return; // Still loading
+
+    if (status === "unauthenticated") {
+      router.push("/");
+      return;
+    }
+
+    if (status === "authenticated" && session?.user) {
+      setUser({
+        id: session.user.id || "",
+        name: session.user.name || "",
+        role: session.user.role || "user"
+      });
+      
+      if (session.user.role === 'admin') {
+        fetchStats();
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [status, session, router]);
 
   const fetchStats = async () => {
     try {
@@ -167,6 +171,14 @@ export default function DashboardPage() {
     }
   }, [activeTab, user, stats]);
 
+  const handleLogout = async () => {
+    try {
+      await signOut({ callbackUrl: '/' });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
@@ -178,9 +190,25 @@ export default function DashboardPage() {
   if (user?.role !== 'admin') {
     return (
       <div style={{ padding: '2rem' }}>
-        <div style={{ marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '400', marginBottom: '0.5rem' }}>Dashboard</h1>
-          <p style={{ color: '#666', fontSize: '14px' }}>Welcome back, {user?.name}</p>
+        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: '28px', fontWeight: '400', marginBottom: '0.5rem' }}>Dashboard</h1>
+            <p style={{ color: '#666', fontSize: '14px' }}>Welcome back, {user?.name}</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              cursor: 'pointer'
+            }}
+          >
+            Logout
+          </button>
         </div>
         <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <p>Access your ecosystems from the navigation menu.</p>
@@ -191,9 +219,25 @@ export default function DashboardPage() {
 
   return (
     <div style={{ padding: '2rem' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '400', marginBottom: '0.5rem' }}>Admin Dashboard</h1>
-        <p style={{ color: '#666', fontSize: '14px' }}>System Overview and Management</p>
+      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '28px', fontWeight: '400', marginBottom: '0.5rem' }}>Admin Dashboard</h1>
+          <p style={{ color: '#666', fontSize: '14px' }}>System Overview and Management</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          Logout
+        </button>
       </div>
 
       {/* Tab Navigation */}
