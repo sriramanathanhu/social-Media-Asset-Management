@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("nandi_session_token");
+    const sessionToken = cookieStore.get("nandi_session");
     const logoutFlag = cookieStore.get("force_logout");
 
     // Check if user has been forcefully logged out
@@ -88,9 +88,9 @@ export async function GET() {
 export async function DELETE() {
   try {
     const cookieStore = await cookies();
-    
+
     // Get the session token first before deleting it
-    const sessionToken = cookieStore.get("nandi_session_token");
+    const sessionToken = cookieStore.get("nandi_session");
     
     // Try to revoke the session on Nandi first if possible
     if (sessionToken?.value) {
@@ -138,17 +138,17 @@ export async function DELETE() {
     }
     
     // Delete the session cookie with proper options matching the original cookie
-    cookieStore.set("nandi_session_token", "", {
+    cookieStore.set("nandi_session", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",  // Match the original cookie sameSite setting
       maxAge: 0,
       path: "/",
     });
-    
+
     // Also delete any other possible cookie variations
-    cookieStore.delete("nandi_session_token");
     cookieStore.delete("nandi_session");
+    cookieStore.delete("nandi_session_token");
     
     // Set a logout flag since we can't actually logout from Nandi
     cookieStore.set("force_logout", "true", {
@@ -161,8 +161,8 @@ export async function DELETE() {
     
     // Set multiple Set-Cookie headers to ensure deletion
     const headers = new Headers();
-    headers.append("Set-Cookie", "nandi_session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict");
     headers.append("Set-Cookie", "nandi_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict");
+    headers.append("Set-Cookie", "nandi_session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict");
     headers.append("Set-Cookie", "force_logout=true; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800");
     
     return new Response(JSON.stringify({ message: "Logged out successfully" }), {

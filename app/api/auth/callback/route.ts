@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
       return new Response("Missing auth_code", { status: 400 });
     }
 
-    // Use official Nandi Auth token exchange endpoint
-    const tokenExchangeUrl = `${process.env.NEXT_AUTH_URL}/auth/session/exchange-token`;
+    // Use official Nandi Auth token exchange endpoint (from API docs: /auth/session/token)
+    const tokenExchangeUrl = `${process.env.NEXT_AUTH_URL}/auth/session/token`;
     console.log("Calling official token exchange:", tokenExchangeUrl);
 
     const res = await fetch(tokenExchangeUrl, {
@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
     cookieStore.delete("nandi_session_token");
     cookieStore.delete("nandi_session");
     cookieStore.delete("force_logout");
-    
-    // Set the new cookie
+
+    // Set the cookie with correct name (nandi_session per API docs)
     cookieStore.set({
-      name: "nandi_session_token",
+      name: "nandi_session",
       value: data.session_token,
       httpOnly: true,
       sameSite: "strict",
