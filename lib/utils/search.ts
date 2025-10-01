@@ -1,48 +1,36 @@
-// Utility for case-insensitive search with SQLite and Prisma
+// Utility for case-insensitive search with PostgreSQL and SQLite
 
 export function buildSearchConditions(search: string, fields: string[]) {
   if (!search) return undefined;
-  
-  // For SQLite, we create multiple OR conditions to handle case variations
-  const searchLower = search.toLowerCase();
-  const searchUpper = search.toUpperCase();
-  const searchCapitalized = search.charAt(0).toUpperCase() + search.slice(1).toLowerCase();
-  
-  type SearchCondition = { [key: string]: { contains: string } };
+
+  type SearchCondition = { [key: string]: { contains: string; mode?: 'insensitive' } };
   const conditions: SearchCondition[] = [];
-  
+
   fields.forEach(field => {
-    // Add conditions for different case variations
+    // For PostgreSQL, use mode: 'insensitive' for case-insensitive search
+    // This also works with SQLite
     conditions.push(
-      { [field]: { contains: search } },
-      { [field]: { contains: searchLower } },
-      { [field]: { contains: searchUpper } },
-      { [field]: { contains: searchCapitalized } }
+      { [field]: { contains: search, mode: 'insensitive' } }
     );
   });
-  
+
   return conditions;
 }
 
 // Alternative: Use startsWith for better performance with indexes
 export function buildSearchConditionsStartsWith(search: string, fields: string[]) {
   if (!search) return undefined;
-  
-  const searchLower = search.toLowerCase();
-  const searchUpper = search.toUpperCase();
-  const searchCapitalized = search.charAt(0).toUpperCase() + search.slice(1).toLowerCase();
-  
-  type SearchCondition = { [key: string]: { startsWith: string } };
+
+  type SearchCondition = { [key: string]: { startsWith: string; mode?: 'insensitive' } };
   const conditions: SearchCondition[] = [];
-  
+
   fields.forEach(field => {
+    // For PostgreSQL, use mode: 'insensitive' for case-insensitive search
+    // This also works with SQLite
     conditions.push(
-      { [field]: { startsWith: search } },
-      { [field]: { startsWith: searchLower } },
-      { [field]: { startsWith: searchUpper } },
-      { [field]: { startsWith: searchCapitalized } }
+      { [field]: { startsWith: search, mode: 'insensitive' } }
     );
   });
-  
+
   return conditions;
 }

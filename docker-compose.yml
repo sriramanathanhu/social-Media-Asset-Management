@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: social-media-portal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: social_media_portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: .
@@ -9,38 +27,44 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       # Node environment
       - NODE_ENV=production
-      
+
       # Database - PostgreSQL
       - DATABASE_URL=${DATABASE_URL}
-      
+
       # Authentication - Nandi Auth (Official Implementation)
       - NEXT_AUTH_URL=${NEXT_AUTH_URL}
       - NEXT_AUTH_CLIENT_ID=${NEXT_AUTH_CLIENT_ID}
       - AUTH_CLIENT_SECRET=${AUTH_CLIENT_SECRET}
       - NEXT_BASE_URL=${NEXT_BASE_URL}
-      
+
       # Public Environment Variables (for frontend - using official naming)
       - NEXT_PUBLIC_NEXT_AUTH_URL=${NEXT_PUBLIC_NEXT_AUTH_URL}
       - NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID=${NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID}
       - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
-      
+
       # Security
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      
+
       # Port
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      
+
     volumes:
       # Persist uploads directory
       - ./uploads:/app/uploads
-      
+
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  postgres_data:

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (platformType) {
-      where.platform_type = { contains: platformType };
+      where.platform_type = { contains: platformType, mode: 'insensitive' };
     }
 
     if (totpFilter !== null && totpFilter !== undefined) {
