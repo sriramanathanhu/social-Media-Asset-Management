@@ -258,6 +258,7 @@ export default function EcosystemsPage() {
                 <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Name</th>
                 <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Theme</th>
                 <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Platforms</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Assigned Users</th>
                 <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Status</th>
                 <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px', width: '8rem' }}>Actions</th>
               </tr>
@@ -280,7 +281,25 @@ export default function EcosystemsPage() {
                     <span style={{ color: '#555' }}>{ecosystem.theme}</span>
                   </td>
                   <td style={{ padding: '0.75rem' }}>
-                    <span style={{ color: '#555' }}>25</span>
+                    <span style={{ color: '#555' }}>{ecosystem.platform_count || 0}</span>
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    {ecosystem.userEcosystems && ecosystem.userEcosystems.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {ecosystem.userEcosystems.slice(0, 2).map((ue: any) => (
+                          <span key={ue.id} style={{ fontSize: '13px', color: '#555' }}>
+                            {ue.user.name}
+                          </span>
+                        ))}
+                        {ecosystem.userEcosystems.length > 2 && (
+                          <span style={{ fontSize: '12px', color: '#888' }}>
+                            +{ecosystem.userEcosystems.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '13px', color: '#999' }}>No users assigned</span>
+                    )}
                   </td>
                   <td style={{ padding: '0.75rem' }}>
                     <span style={{

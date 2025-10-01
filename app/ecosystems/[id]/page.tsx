@@ -8,7 +8,7 @@ export default function EcosystemDetailPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [ecosystem, setEcosystem] = useState<{ id: number; name: string; theme: string; description?: string; active_status?: boolean } | null>(null);
+  const [ecosystem, setEcosystem] = useState<{ id: number; name: string; theme: string; description?: string; active_status?: boolean; userEcosystems?: any[] } | null>(null);
   const [platforms, setPlatforms] = useState<Array<{ id: number; Id?: number; platform_name: string; platform_type: string; login_method?: string; username?: string; password?: string; profile_url?: string; totp_enabled: boolean }>>([]);
   const [loading, setLoading] = useState(true);
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
@@ -21,6 +21,9 @@ export default function EcosystemDetailPage() {
     limit: 12,
     totalPages: 1
   });
+  const [showUserAssignment, setShowUserAssignment] = useState(false);
+  const [allUsers, setAllUsers] = useState<Array<{ id: number; name: string; email: string }>>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   const loadPlatforms = useCallback(async () => {
     try {
@@ -95,6 +98,62 @@ export default function EcosystemDetailPage() {
       loadPlatforms();
     }
   }, [searchTerm, currentPage, ecosystem, loadPlatforms, params.id]);
+
+  // Load all users when assignment modal is opened
+  useEffect(() => {
+    if (showUserAssignment && user?.role === 'admin') {
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          setAllUsers(data.users || []);
+        })
+        .catch(console.error);
+    }
+  }, [showUserAssignment, user]);
+
+  const handleAssignUser = async () => {
+    if (!selectedUserId || !params.id) return;
+
+    try {
+      const response = await fetch(`/api/ecosystems/${params.id}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUserId })
+      });
+
+      if (response.ok) {
+        setShowUserAssignment(false);
+        setSelectedUserId(null);
+        loadEcosystemData(); // Reload to show updated user list
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to assign user');
+      }
+    } catch (error) {
+      console.error('Error assigning user:', error);
+      alert('Failed to assign user');
+    }
+  };
+
+  const handleUnassignUser = async (userId: number) => {
+    if (!confirm('Are you sure you want to unassign this user?')) return;
+
+    try {
+      const response = await fetch(`/api/ecosystems/${params.id}/users?userId=${userId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        loadEcosystemData(); // Reload to show updated user list
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to unassign user');
+      }
+    } catch (error) {
+      console.error('Error unassigning user:', error);
+      alert('Failed to unassign user');
+    }
+  };
 
   const togglePasswordVisibility = (platformId: number | undefined) => {
     if (!platformId) return;
@@ -221,6 +280,166 @@ export default function EcosystemDetailPage() {
           </p>
         </div>
       </div>
+
+      {/* User Assignment Section (Admin Only) */}
+      {user?.role === 'admin' && (
+        <div style={{
+          backgroundColor: 'white',
+          padding: '1.5rem',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          marginBottom: '2rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Assigned Users</h3>
+            <button
+              onClick={() => setShowUserAssignment(true)}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#0066cc',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              + Assign User
+            </button>
+          </div>
+
+          {ecosystem?.userEcosystems && ecosystem.userEcosystems.length > 0 ? (
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              {ecosystem.userEcosystems.map((ue: any) => (
+                <div
+                  key={ue.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.75rem',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: '500', fontSize: '14px' }}>{ue.user.name}</div>
+                    <div style={{ fontSize: '13px', color: '#666' }}>{ue.user.email}</div>
+                  </div>
+                  <button
+                    onClick={() => handleUnassignUser(ue.user.id)}
+                    style={{
+                      padding: '0.25rem 0.75rem',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '13px'
+                    }}
+                  >
+                    Unassign
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: '#666', fontSize: '14px' }}>No users assigned to this ecosystem yet.</p>
+          )}
+        </div>
+      )}
+
+      {/* User Assignment Modal */}
+      {showUserAssignment && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '1.5rem' }}>
+              Assign User to Ecosystem
+            </h3>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Select User
+              </label>
+              <select
+                value={selectedUserId || ''}
+                onChange={(e) => setSelectedUserId(parseInt(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">Choose a user...</option>
+                {allUsers
+                  .filter(u => !ecosystem?.userEcosystems?.some((ue: any) => ue.user.id === u.id))
+                  .map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.email})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowUserAssignment(false);
+                  setSelectedUserId(null);
+                }}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  backgroundColor: '#f0f0f0',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignUser}
+                disabled={!selectedUserId}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  backgroundColor: selectedUserId ? '#0066cc' : '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: selectedUserId ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Assign User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Platforms Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
