@@ -3,14 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { 
-  Home, 
-  Globe, 
-  Users, 
+import {
+  Home,
+  Globe,
+  Users,
   Mail,
   LogOut,
   ChevronDown,
-  User
+  User,
+  Boxes
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -49,6 +50,7 @@ export default function Sidebar() {
   const menuItems: MenuItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/ecosystems", label: "Ecosystems", icon: Globe },
+    { href: "/platforms", label: "Platforms", icon: Boxes },
     ...(user?.role === 'admin' ? [
       { href: "/users", label: "User Management", icon: Users },
       { href: "/emails", label: "Email Settings", icon: Mail },
