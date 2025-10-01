@@ -103,11 +103,21 @@ export default function EcosystemDetailPage() {
   useEffect(() => {
     if (showUserAssignment && user?.role === 'admin') {
       fetch('/api/users')
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            console.error('Failed to fetch users:', res.status);
+            return { users: [] };
+          }
+          return res.json();
+        })
         .then(data => {
+          console.log('Users data:', data);
           setAllUsers(data.users || []);
         })
-        .catch(console.error);
+        .catch(err => {
+          console.error('Error fetching users:', err);
+          setAllUsers([]);
+        });
     }
   }, [showUserAssignment, user]);
 
