@@ -47,6 +47,7 @@ export default function Sidebar() {
     );
   };
 
+  // Main navigation menu items
   const menuItems: MenuItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/ecosystems", label: "Ecosystems", icon: Globe },
