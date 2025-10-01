@@ -1,18 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { requireAuth } from '@/lib/utils/auth';
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const auth = await requireAuth();
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : (process.env.NEXT_PUBLIC_BASE_URL || request.url);
 
-    if (!auth.authorized || !auth.user) {
+    const sessionRes = await fetch(new URL('/api/auth/session', baseUrl), {
+      headers: {
+        cookie: request.headers.get('cookie') || '',
+      },
+    });
+
+    if (!sessionRes.ok) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = auth.user.role;
-    const userId = auth.user.id;
+    const session = await sessionRes.json();
+    if (!session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRole = session.user.role;
+    const userId = session.user.dbId;
 
     // Fetch all platforms with ecosystem and user relationships
     let platforms;
