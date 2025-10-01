@@ -72,7 +72,10 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
       const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
-        setAllUsers(data.list || []);
+        console.log("Loaded users for platform access:", data);
+        setAllUsers(data.list || data.users || []);
+      } else {
+        console.error("Failed to load users:", res.status, res.statusText);
       }
     } catch (error) {
       console.error("Error loading users:", error);
@@ -169,6 +172,7 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
         </div>
         {canManage && (
           <button
+            type="button"
             onClick={handleOpenAddModal}
             style={{
               padding: "0.5rem 1rem",
@@ -237,6 +241,7 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
               </div>
               {canManage && (
                 <button
+                  type="button"
                   onClick={() => handleRemoveAccess(access.id)}
                   style={{
                     padding: "0.5rem",
@@ -359,6 +364,7 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
 
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
               <button
+                type="button"
                 onClick={() => {
                   setShowAddModal(false);
                   setSelectedUserId(null);
@@ -378,6 +384,7 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleAddAccess}
                 disabled={submitting || !selectedUserId || !selectedAccessLevel}
                 style={{
