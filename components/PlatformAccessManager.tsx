@@ -90,6 +90,13 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
 
     try {
       setSubmitting(true);
+      console.log("Adding platform access:", {
+        platformId,
+        userId: selectedUserId,
+        accessLevel: selectedAccessLevel,
+        notes
+      });
+
       const res = await fetch(`/api/platforms/${platformId}/access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -100,7 +107,11 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
         }),
       });
 
+      console.log("Add access response status:", res.status);
+
       if (res.ok) {
+        const data = await res.json();
+        console.log("Access added successfully:", data);
         setShowAddModal(false);
         setSelectedUserId(null);
         setSelectedAccessLevel("");
@@ -108,6 +119,7 @@ export default function PlatformAccessManager({ platformId, platformType, userRo
         loadAccessList();
       } else {
         const error = await res.json();
+        console.error("Failed to add access:", res.status, error);
         alert(error.error || "Failed to add access");
       }
     } catch (error) {
