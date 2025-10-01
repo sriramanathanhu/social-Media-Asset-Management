@@ -34,11 +34,6 @@ export async function GET(request: NextRequest) {
       platforms = await prisma.socialMediaPlatform.findMany({
         include: {
           ecosystem: {
-            select: {
-              id: true,
-              name: true,
-              theme: true,
-            },
             include: {
               userEcosystems: {
                 include: {
@@ -79,11 +74,6 @@ export async function GET(request: NextRequest) {
         },
         include: {
           ecosystem: {
-            select: {
-              id: true,
-              name: true,
-              theme: true,
-            },
             include: {
               userEcosystems: {
                 include: {
