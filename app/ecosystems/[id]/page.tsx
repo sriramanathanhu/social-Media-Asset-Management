@@ -9,7 +9,7 @@ export default function EcosystemDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ecosystem, setEcosystem] = useState<{ id: number; name: string; theme: string; description?: string; active_status?: boolean } | null>(null);
-  const [platforms, setPlatforms] = useState<Array<{ id: number; Id?: number; platform_name: string; platform_type: string; username?: string; password?: string; profile_url?: string; totp_enabled: boolean }>>([]);
+  const [platforms, setPlatforms] = useState<Array<{ id: number; Id?: number; platform_name: string; platform_type: string; login_method?: string; username?: string; password?: string; profile_url?: string; totp_enabled: boolean }>>([]);
   const [loading, setLoading] = useState(true);
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
   const [user, setUser] = useState<{ id: number; role: string } | null>(null);
@@ -318,6 +318,14 @@ export default function EcosystemDetailPage() {
                   {platform.platform_name}
                 </h3>
                 <p style={{ fontSize: '13px', color: '#666' }}>{platform.platform_type}</p>
+                {platform.login_method && (
+                  <p style={{ fontSize: '12px', color: '#888', marginTop: '0.25rem' }}>
+                    Login: {platform.login_method === 'email_password' ? 'Email & Password' :
+                           platform.login_method === 'google_oauth' ? 'Google OAuth' :
+                           platform.login_method === 'facebook_oauth' ? 'Facebook OAuth' :
+                           platform.login_method === 'apple_id' ? 'Apple ID' : platform.login_method}
+                  </p>
+                )}
               </div>
               
               <div style={{ display: 'flex', gap: '0.5rem' }}>

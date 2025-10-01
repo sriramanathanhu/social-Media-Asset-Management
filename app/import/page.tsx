@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-type ImportType = 'users' | 'ecosystems' | 'user-assignments' | null;
+type ImportType = 'users' | 'ecosystems' | 'user-assignments' | 'bulk-import' | null;
 
 interface ImportResult {
   success: boolean;
@@ -150,6 +150,13 @@ export default function ImportPage() {
       icon: '🔗',
       description: 'Assign users to ecosystems',
       fields: 'user_email, ecosystem_name, assigned_by_email'
+    },
+    {
+      type: 'bulk-import' as ImportType,
+      title: 'Bulk Import (Ecosystems + Platforms)',
+      icon: '📦',
+      description: 'Import complete ecosystems with social media platforms and credentials',
+      fields: 'ecosystem details, platform details, login method, credentials'
     }
   ];
 

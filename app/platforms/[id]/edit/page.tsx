@@ -12,6 +12,7 @@ export default function PlatformEditPage() {
     id: number;
     platform_name: string;
     platform_type: string;
+    login_method?: string;
     profile_id?: string;
     username?: string;
     password?: string;
@@ -28,6 +29,7 @@ export default function PlatformEditPage() {
   const [formData, setFormData] = useState({
     platform_name: "",
     platform_type: "",
+    login_method: "email_password",
     profile_id: "",
     username: "",
     password: "",
@@ -86,6 +88,7 @@ export default function PlatformEditPage() {
       setFormData({
         platform_name: platformData.platform_name || "",
         platform_type: platformData.platform_type || "",
+        login_method: platformData.login_method || "email_password",
         profile_id: platformData.profile_id || "",
         username: platformData.username || "",
         password: platformData.password || "",
@@ -287,6 +290,115 @@ export default function PlatformEditPage() {
                   cursor: 'not-allowed'
                 }}
               />
+            </div>
+
+            {/* Login Method Selection */}
+            <div style={{ gridColumn: 'span 2' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Login Method <span style={{ color: 'red' }}>*</span>
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  padding: '0.75rem',
+                  border: `2px solid ${formData.login_method === 'email_password' ? '#0066cc' : '#ddd'}`,
+                  borderRadius: '6px',
+                  backgroundColor: formData.login_method === 'email_password' ? '#f0f7ff' : 'white',
+                  transition: 'all 0.2s'
+                }}>
+                  <input
+                    type="radio"
+                    name="login_method"
+                    value="email_password"
+                    checked={formData.login_method === 'email_password'}
+                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  <span style={{ fontWeight: formData.login_method === 'email_password' ? '600' : '400' }}>
+                    Email & Password
+                  </span>
+                </label>
+
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  padding: '0.75rem',
+                  border: `2px solid ${formData.login_method === 'google_oauth' ? '#0066cc' : '#ddd'}`,
+                  borderRadius: '6px',
+                  backgroundColor: formData.login_method === 'google_oauth' ? '#f0f7ff' : 'white',
+                  transition: 'all 0.2s'
+                }}>
+                  <input
+                    type="radio"
+                    name="login_method"
+                    value="google_oauth"
+                    checked={formData.login_method === 'google_oauth'}
+                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  <span style={{ fontWeight: formData.login_method === 'google_oauth' ? '600' : '400' }}>
+                    Google OAuth
+                  </span>
+                </label>
+
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  padding: '0.75rem',
+                  border: `2px solid ${formData.login_method === 'facebook_oauth' ? '#0066cc' : '#ddd'}`,
+                  borderRadius: '6px',
+                  backgroundColor: formData.login_method === 'facebook_oauth' ? '#f0f7ff' : 'white',
+                  transition: 'all 0.2s'
+                }}>
+                  <input
+                    type="radio"
+                    name="login_method"
+                    value="facebook_oauth"
+                    checked={formData.login_method === 'facebook_oauth'}
+                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  <span style={{ fontWeight: formData.login_method === 'facebook_oauth' ? '600' : '400' }}>
+                    Facebook OAuth
+                  </span>
+                </label>
+
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  padding: '0.75rem',
+                  border: `2px solid ${formData.login_method === 'apple_id' ? '#0066cc' : '#ddd'}`,
+                  borderRadius: '6px',
+                  backgroundColor: formData.login_method === 'apple_id' ? '#f0f7ff' : 'white',
+                  transition: 'all 0.2s'
+                }}>
+                  <input
+                    type="radio"
+                    name="login_method"
+                    value="apple_id"
+                    checked={formData.login_method === 'apple_id'}
+                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  <span style={{ fontWeight: formData.login_method === 'apple_id' ? '600' : '400' }}>
+                    Apple ID
+                  </span>
+                </label>
+              </div>
+              {formData.login_method !== 'email_password' && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                  ℹ️ For OAuth logins, username and password fields are optional. Use the notes field to document which account is used.
+                </p>
+              )}
             </div>
 
             <div>
