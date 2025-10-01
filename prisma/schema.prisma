@@ -20,10 +20,12 @@ model User {
   updated_at  DateTime @updatedAt
 
   // Relations
-  userEcosystems    UserEcosystem[]
-  credentialHistory CredentialHistory[] @relation("ChangedBy")
-  assignedBy        UserEcosystem[]     @relation("AssignedBy")
-  platformAuditLogs PlatformAuditLog[]
+  userEcosystems       UserEcosystem[]
+  credentialHistory    CredentialHistory[]  @relation("ChangedBy")
+  assignedBy           UserEcosystem[]      @relation("AssignedBy")
+  platformAuditLogs    PlatformAuditLog[]
+  platformAccess       PlatformAccess[]     @relation("PlatformAccessUser")
+  grantedPlatformAccess PlatformAccess[]    @relation("PlatformAccessGrantedBy")
 }
 
 model Ecosystem {
@@ -92,6 +94,7 @@ model SocialMediaPlatform {
   ecosystem          Ecosystem           @relation(fields: [ecosystem_id], references: [id], onDelete: Cascade)
   credentialHistory  CredentialHistory[]
   auditLogs          PlatformAuditLog[]
+  platformAccess     PlatformAccess[]
 
   @@unique([ecosystem_id, platform_name])
 }
@@ -152,4 +155,23 @@ model PlatformAuditLog {
   // Relations
   platform     SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
   user         User                @relation(fields: [user_id], references: [id])
+}
+
+model PlatformAccess {
+  id              Int      @id @default(autoincrement())
+  platform_id     Int
+  user_id         Int
+  access_level    String   // Platform-specific role: admin, editor, moderator, analyst, etc.
+  granted_by      Int?     // User who granted this access
+  granted_at      DateTime @default(now())
+  notes           String?  // Additional notes about this access
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  platform        SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
+  user            User                @relation("PlatformAccessUser", fields: [user_id], references: [id], onDelete: Cascade)
+  grantedByUser   User?               @relation("PlatformAccessGrantedBy", fields: [granted_by], references: [id])
+
+  @@unique([platform_id, user_id, access_level]) // Prevent duplicate access assignments
 }

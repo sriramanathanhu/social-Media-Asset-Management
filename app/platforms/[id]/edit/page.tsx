@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import PlatformAccessManager from "@/components/PlatformAccessManager";
 
 export default function PlatformEditPage() {
   const params = useParams();
@@ -617,6 +618,15 @@ export default function PlatformEditPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Platform Access Management */}
+        {platform && currentUser && (
+          <PlatformAccessManager
+            platformId={platform.id}
+            platformType={platform.platform_type}
+            userRole={currentUser.role}
+          />
         )}
 
         {/* Form Actions */}
