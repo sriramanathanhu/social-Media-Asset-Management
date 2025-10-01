@@ -430,9 +430,11 @@ export default function PlatformEditPage() {
             }}>
               <h3 style={{ fontSize: '18px', marginBottom: '1rem' }}>Setup Two-Factor Authentication</h3>
               
-              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                <Image src={totpQRCode} alt="TOTP QR Code" width={200} height={200} style={{ maxWidth: '200px', height: 'auto' }} />
-              </div>
+              {totpQRCode && (
+                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                  <Image src={totpQRCode} alt="TOTP QR Code" width={200} height={200} style={{ maxWidth: '200px', height: 'auto' }} />
+                </div>
+              )}
               
               <p style={{ fontSize: '14px', marginBottom: '0.5rem' }}>
                 Manual entry code:
