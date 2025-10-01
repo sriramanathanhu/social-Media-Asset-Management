@@ -123,8 +123,6 @@ export async function POST(
 
     const session = await sessionRes.json();
 
-    console.log('POST /access - Session data:', JSON.stringify(session, null, 2));
-
     if (!session.user) {
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
@@ -181,14 +179,6 @@ export async function POST(
     }
 
     // Create access assignment
-    console.log('Creating platform access with data:', {
-      platform_id: platformId,
-      user_id: userId,
-      access_level: accessLevel,
-      granted_by: session.user.dbId,
-      notes: notes || null
-    });
-
     const access = await prisma.platformAccess.create({
       data: {
         platform_id: platformId,
@@ -216,13 +206,9 @@ export async function POST(
       }
     });
 
-    console.log('Platform access created successfully:', access);
     return NextResponse.json({ success: true, access });
   } catch (error: any) {
     console.error('Error adding platform access:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Error details:', JSON.stringify(error, null, 2));
 
     // Handle unique constraint violation
     if (error.code === 'P2002') {
