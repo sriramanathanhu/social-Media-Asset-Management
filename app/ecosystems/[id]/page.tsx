@@ -106,13 +106,13 @@ export default function EcosystemDetailPage() {
         .then(res => {
           if (!res.ok) {
             console.error('Failed to fetch users:', res.status);
-            return { users: [] };
+            return { list: [] };
           }
           return res.json();
         })
         .then(data => {
           console.log('Users data:', data);
-          setAllUsers(data.users || []);
+          setAllUsers(data.list || data.users || []);
         })
         .catch(err => {
           console.error('Error fetching users:', err);
