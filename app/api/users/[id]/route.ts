@@ -7,7 +7,8 @@ export async function GET(
 ) {
   try {
     // Check if user is admin
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : (process.env.NEXT_PUBLIC_BASE_URL || request.url);
+    const sessionRes = await fetch(new URL('/api/auth/session', baseUrl), {
       headers: {
         cookie: request.headers.get('cookie') || '',
       },
@@ -64,7 +65,8 @@ export async function PUT(
 ) {
   try {
     // Check if user is admin
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : (process.env.NEXT_PUBLIC_BASE_URL || request.url);
+    const sessionRes = await fetch(new URL('/api/auth/session', baseUrl), {
       headers: {
         cookie: request.headers.get('cookie') || '',
       },
@@ -131,7 +133,8 @@ export async function DELETE(
 ) {
   try {
     // Check if user is admin
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : (process.env.NEXT_PUBLIC_BASE_URL || request.url);
+    const sessionRes = await fetch(new URL('/api/auth/session', baseUrl), {
       headers: {
         cookie: request.headers.get('cookie') || '',
       },

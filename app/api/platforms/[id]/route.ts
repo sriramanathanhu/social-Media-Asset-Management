@@ -9,7 +9,8 @@ export async function GET(
 ) {
   try {
     // Get user session to check permissions
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : (process.env.NEXT_PUBLIC_BASE_URL || request.url);
+    const sessionRes = await fetch(new URL('/api/auth/session', baseUrl), {
       headers: {
         cookie: request.headers.get('cookie') || '',
       },
@@ -105,7 +106,8 @@ export async function PUT(
 ) {
   try {
     // Get user session to check permissions
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : (process.env.NEXT_PUBLIC_BASE_URL || request.url);
+    const sessionRes = await fetch(new URL('/api/auth/session', baseUrl), {
       headers: {
         cookie: request.headers.get('cookie') || '',
       },
@@ -266,7 +268,8 @@ export async function DELETE(
 ) {
   try {
     // Get user session to check permissions
-    const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : (process.env.NEXT_PUBLIC_BASE_URL || request.url);
+    const sessionRes = await fetch(new URL('/api/auth/session', baseUrl), {
       headers: {
         cookie: request.headers.get('cookie') || '',
       },
