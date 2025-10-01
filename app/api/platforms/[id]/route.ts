@@ -193,7 +193,7 @@ export async function PUT(
     // Get old platform data for audit logging
     const oldPlatform = { ...platform };
     const { username, password, changed_by, ...otherFields } = body;
-    
+
     // Use transaction to ensure atomicity
     const result = await prisma.$transaction(async (tx) => {
       interface UpdateData {
@@ -202,7 +202,7 @@ export async function PUT(
         password?: string;
         [key: string]: unknown;
       }
-      
+
       const updateData: UpdateData = {
         ...otherFields,
         updated_at: new Date(),

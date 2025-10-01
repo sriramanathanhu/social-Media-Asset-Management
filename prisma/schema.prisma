@@ -90,6 +90,17 @@ model SocialMediaPlatform {
   following_count    Int?
   posts_count        Int?
 
+  // New fields
+  live_stream        String?  // Enabled, Not Enabled, Not Applicable
+  language           String?
+  status             String?  // Active, Suspended, Terminated, Able to access, Incorrect Password, Missing Password, Requires Phone no
+  recovery_phone_number String?
+  recovery_email_id  String?
+  added_phone_number String?
+  phone_number_owner String?
+  branding           String?  // Completed, Partial, Nothing
+  connection_tool    String?  // Sprinklr, Getlate, None
+
   // Relations
   ecosystem          Ecosystem           @relation(fields: [ecosystem_id], references: [id], onDelete: Cascade)
   credentialHistory  CredentialHistory[]

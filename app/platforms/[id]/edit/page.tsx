@@ -20,6 +20,15 @@ export default function PlatformEditPage() {
     profile_url?: string;
     totp_enabled?: boolean;
     ecosystem_id?: number;
+    live_stream?: string;
+    language?: string;
+    status?: string;
+    recovery_phone_number?: string;
+    recovery_email_id?: string;
+    added_phone_number?: string;
+    phone_number_owner?: string;
+    branding?: string;
+    connection_tool?: string;
   }
   const [platform, setPlatform] = useState<PlatformData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +44,15 @@ export default function PlatformEditPage() {
     username: "",
     password: "",
     profile_url: "",
+    live_stream: "",
+    language: "",
+    status: "",
+    recovery_phone_number: "",
+    recovery_email_id: "",
+    added_phone_number: "",
+    phone_number_owner: "",
+    branding: "",
+    connection_tool: "",
   });
   
   // TOTP states
@@ -94,6 +112,15 @@ export default function PlatformEditPage() {
         username: platformData.username || "",
         password: platformData.password || "",
         profile_url: platformData.profile_url || "",
+        live_stream: platformData.live_stream || "",
+        language: platformData.language || "",
+        status: platformData.status || "",
+        recovery_phone_number: platformData.recovery_phone_number || "",
+        recovery_email_id: platformData.recovery_email_id || "",
+        added_phone_number: platformData.added_phone_number || "",
+        phone_number_owner: platformData.phone_number_owner || "",
+        branding: platformData.branding || "",
+        connection_tool: platformData.connection_tool || "",
       });
       
       setLoading(false);
@@ -472,6 +499,201 @@ export default function PlatformEditPage() {
                   fontSize: '14px'
                 }}
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Platform Information */}
+        <div style={{
+          backgroundColor: 'white',
+          padding: '2rem',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          marginBottom: '2rem'
+        }}>
+          <h2 style={{ fontSize: '18px', marginBottom: '1.5rem', fontWeight: '600' }}>Additional Information</h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Live Stream
+              </label>
+              <select
+                value={formData.live_stream}
+                onChange={(e) => setFormData({ ...formData, live_stream: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">Select...</option>
+                <option value="Enabled">Enabled</option>
+                <option value="Not Enabled">Not Enabled</option>
+                <option value="Not Applicable">Not Applicable</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Language
+              </label>
+              <input
+                type="text"
+                value={formData.language}
+                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">Select...</option>
+                <option value="Active">Active</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Terminated">Terminated</option>
+                <option value="Able to access">Able to access</option>
+                <option value="Incorrect Password">Incorrect Password</option>
+                <option value="Missing Password">Missing Password</option>
+                <option value="Requires Phone no">Requires Phone no</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Recovery Phone Number
+              </label>
+              <input
+                type="text"
+                value={formData.recovery_phone_number}
+                onChange={(e) => setFormData({ ...formData, recovery_phone_number: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Recovery Email ID
+              </label>
+              <input
+                type="email"
+                value={formData.recovery_email_id}
+                onChange={(e) => setFormData({ ...formData, recovery_email_id: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Added Phone Number
+              </label>
+              <input
+                type="text"
+                value={formData.added_phone_number}
+                onChange={(e) => setFormData({ ...formData, added_phone_number: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Phone Number Owner
+              </label>
+              <input
+                type="text"
+                value={formData.phone_number_owner}
+                onChange={(e) => setFormData({ ...formData, phone_number_owner: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Branding
+              </label>
+              <select
+                value={formData.branding}
+                onChange={(e) => setFormData({ ...formData, branding: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">Select...</option>
+                <option value="Completed">Completed</option>
+                <option value="Partial">Partial</option>
+                <option value="Nothing">Nothing</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Connection Tool
+              </label>
+              <select
+                value={formData.connection_tool}
+                onChange={(e) => setFormData({ ...formData, connection_tool: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">Select...</option>
+                <option value="Sprinklr">Sprinklr</option>
+                <option value="Getlate">Getlate</option>
+                <option value="None">None</option>
+              </select>
             </div>
           </div>
         </div>
