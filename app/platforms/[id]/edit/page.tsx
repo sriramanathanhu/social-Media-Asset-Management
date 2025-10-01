@@ -57,9 +57,9 @@ export default function PlatformEditPage() {
   
   // TOTP states
   const [showTOTPSetup, setShowTOTPSetup] = useState(false);
-  const [totpSecret, setTOTPSecret] = useState("");
-  const [totpQRCode, setTOTPQRCode] = useState("");
-  const [totpToken, setTOTPToken] = useState("");
+  const [totpSecretInput, setTOTPSecretInput] = useState("");
+  const [currentTOTPCode, setCurrentTOTPCode] = useState("");
+  const [totpTimeLeft, setTOTPTimeLeft] = useState(30);
 
   const loadPlatformData = useCallback(async (userData: { dbId: number; role: string }) => {
     try {
@@ -187,50 +187,97 @@ export default function PlatformEditPage() {
     }
   };
 
-  const setupTOTP = async () => {
-    try {
-      const res = await fetch(`/api/platforms/${params.id}/totp/setup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userEmail: currentUser?.email,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setTOTPSecret(data.secret);
-        setTOTPQRCode(data.qrCode);
-        setShowTOTPSetup(true);
-      }
-    } catch (error) {
-      console.error("Error setting up TOTP:", error);
-      alert("Failed to setup TOTP");
+  const saveTOTPSecret = async () => {
+    if (!totpSecretInput.trim()) {
+      alert("Please enter a TOTP secret");
+      return;
     }
-  };
 
-  const verifyAndEnableTOTP = async () => {
     try {
-      const res = await fetch(`/api/platforms/${params.id}/totp/verify`, {
+      const res = await fetch(`/api/platforms/${params.id}/totp/save`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: totpToken }),
+        body: JSON.stringify({ secret: totpSecretInput }),
       });
 
       if (res.ok) {
-        alert("TOTP enabled successfully!");
+        alert("TOTP secret saved successfully!");
         setShowTOTPSetup(false);
+        setTOTPSecretInput("");
         if (currentUser) {
           loadPlatformData(currentUser);
         }
       } else {
-        alert("Invalid token. Please try again.");
+        const error = await res.json();
+        alert(error.error || "Failed to save TOTP secret");
       }
     } catch (error) {
-      console.error("Error verifying TOTP:", error);
-      alert("Failed to verify TOTP");
+      console.error("Error saving TOTP:", error);
+      alert("Failed to save TOTP secret");
     }
   };
+
+  const generateCurrentTOTP = async () => {
+    try {
+      const res = await fetch(`/api/platforms/${params.id}/totp/generate`);
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentTOTPCode(data.token);
+        setTOTPTimeLeft(data.timeRemaining);
+      }
+    } catch (error) {
+      console.error("Error generating TOTP:", error);
+    }
+  };
+
+  const disableTOTP = async () => {
+    if (!confirm("Are you sure you want to disable TOTP for this platform?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/platforms/${params.id}/totp/disable`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        alert("TOTP disabled successfully!");
+        setCurrentTOTPCode("");
+        if (currentUser) {
+          loadPlatformData(currentUser);
+        }
+      } else {
+        alert("Failed to disable TOTP");
+      }
+    } catch (error) {
+      console.error("Error disabling TOTP:", error);
+      alert("Failed to disable TOTP");
+    }
+  };
+
+  const copyTOTPCode = () => {
+    navigator.clipboard.writeText(currentTOTPCode);
+    alert("TOTP code copied to clipboard!");
+  };
+
+  // Auto-refresh TOTP code and countdown
+  useEffect(() => {
+    if (platform?.totp_enabled) {
+      generateCurrentTOTP();
+
+      const interval = setInterval(() => {
+        setTOTPTimeLeft((prev) => {
+          if (prev <= 1) {
+            generateCurrentTOTP();
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [platform?.totp_enabled, params.id]);
 
   if (checkingAuth) {
     return (
@@ -711,22 +758,106 @@ export default function PlatformEditPage() {
           </h2>
           
           {platform?.totp_enabled ? (
-            <div style={{ 
-              padding: '1rem', 
-              backgroundColor: '#d4edda', 
-              borderRadius: '4px',
-              color: '#155724'
-            }}>
-              ✓ TOTP is enabled for this platform
+            <div>
+              <div style={{
+                padding: '1.5rem',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                marginBottom: '1rem'
+              }}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '14px' }}>
+                    Current TOTP Code
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      fontSize: '32px',
+                      fontWeight: 'bold',
+                      letterSpacing: '0.3em',
+                      fontFamily: 'monospace',
+                      color: '#0066cc',
+                      padding: '1rem',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '2px solid #0066cc',
+                      flex: 1,
+                      textAlign: 'center'
+                    }}>
+                      {currentTOTPCode || "------"}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={copyTOTPCode}
+                      disabled={!currentTOTPCode}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        backgroundColor: currentTOTPCode ? '#0066cc' : '#ccc',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: currentTOTPCode ? 'pointer' : 'not-allowed',
+                        fontWeight: '500'
+                      }}
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '14px',
+                  color: '#666'
+                }}>
+                  <span>Refreshes in:</span>
+                  <span style={{
+                    fontWeight: 'bold',
+                    color: totpTimeLeft <= 5 ? '#dc3545' : '#28a745',
+                    fontSize: '16px'
+                  }}>
+                    {totpTimeLeft}s
+                  </span>
+                  <div style={{
+                    flex: 1,
+                    height: '4px',
+                    backgroundColor: '#e9ecef',
+                    borderRadius: '2px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${(totpTimeLeft / 30) * 100}%`,
+                      height: '100%',
+                      backgroundColor: totpTimeLeft <= 5 ? '#dc3545' : '#28a745',
+                      transition: 'width 1s linear'
+                    }} />
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={disableTOTP}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Disable TOTP
+              </button>
             </div>
           ) : (
             <div>
               <p style={{ marginBottom: '1rem', color: '#666' }}>
-                Enable two-factor authentication for additional security
+                Enter the TOTP secret from the social media platform to generate authentication codes.
               </p>
               <button
                 type="button"
-                onClick={setupTOTP}
+                onClick={() => setShowTOTPSetup(true)}
                 style={{
                   padding: '0.5rem 1rem',
                   backgroundColor: '#28a745',
@@ -736,7 +867,7 @@ export default function PlatformEditPage() {
                   cursor: 'pointer'
                 }}
               >
-                Enable TOTP
+                Add TOTP Secret
               </button>
             </div>
           )}
@@ -760,82 +891,74 @@ export default function PlatformEditPage() {
               backgroundColor: 'white',
               padding: '2rem',
               borderRadius: '8px',
-              maxWidth: '400px',
+              maxWidth: '500px',
               width: '90%'
             }}>
-              <h3 style={{ fontSize: '18px', marginBottom: '1rem' }}>Setup Two-Factor Authentication</h3>
-              
-              {totpQRCode && (
-                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                  <Image src={totpQRCode} alt="TOTP QR Code" width={200} height={200} style={{ maxWidth: '200px', height: 'auto' }} />
-                </div>
-              )}
-              
-              <p style={{ fontSize: '14px', marginBottom: '0.5rem' }}>
-                Manual entry code:
+              <h3 style={{ fontSize: '18px', marginBottom: '1rem', fontWeight: '600' }}>Add TOTP Secret</h3>
+
+              <p style={{ fontSize: '14px', marginBottom: '1rem', color: '#666' }}>
+                Enter the TOTP secret key provided by the social media platform. This will allow you to generate authentication codes.
               </p>
-              <code style={{ 
-                display: 'block', 
-                padding: '0.5rem', 
-                backgroundColor: '#f5f5f5',
-                borderRadius: '4px',
-                marginBottom: '1rem',
-                fontSize: '12px',
-                wordBreak: 'break-all'
-              }}>
-                {totpSecret}
-              </code>
-              
-              <div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Enter verification code
+                  TOTP Secret Key
                 </label>
                 <input
                   type="text"
-                  value={totpToken}
-                  onChange={(e) => setTOTPToken(e.target.value)}
-                  placeholder="000000"
+                  value={totpSecretInput}
+                  onChange={(e) => setTOTPSecretInput(e.target.value.replace(/\s/g, ''))}
+                  placeholder="Enter secret key (e.g., JBSWY3DPEHPK3PXP)"
                   style={{
                     width: '100%',
-                    padding: '0.5rem',
+                    padding: '0.75rem',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
-                    fontSize: '16px',
-                    textAlign: 'center',
-                    letterSpacing: '0.2em'
+                    fontSize: '14px',
+                    fontFamily: 'monospace'
                   }}
                 />
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem' }}>
+                  Remove spaces and special characters from the secret key
+                </p>
               </div>
-              
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
                 <button
                   type="button"
-                  onClick={() => setShowTOTPSetup(false)}
+                  onClick={() => {
+                    setShowTOTPSetup(false);
+                    setTOTPSecretInput("");
+                  }}
                   style={{
                     flex: 1,
-                    padding: '0.5rem',
+                    padding: '0.75rem',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
                     backgroundColor: 'white',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    fontSize: '14px'
                   }}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={verifyAndEnableTOTP}
+                  onClick={saveTOTPSecret}
+                  disabled={!totpSecretInput.trim()}
                   style={{
                     flex: 1,
-                    padding: '0.5rem',
-                    backgroundColor: '#0066cc',
+                    padding: '0.75rem',
+                    backgroundColor: totpSecretInput.trim() ? '#28a745' : '#ccc',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
-                    cursor: 'pointer'
+                    cursor: totpSecretInput.trim() ? 'pointer' : 'not-allowed',
+                    fontSize: '14px',
+                    fontWeight: '500'
                   }}
                 >
-                  Verify & Enable
+                  Save & Enable TOTP
                 </button>
               </div>
             </div>
