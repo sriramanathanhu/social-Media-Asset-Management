@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
+import { getPermissions, canAccessEcosystem } from '@/lib/permissions';
+import { extractPlatformChanges, logPlatformUpdate, logPlatformDelete } from '@/lib/audit';
 
 // GET /api/platforms/[id] - Get a specific platform
 export async function GET(
@@ -158,24 +160,38 @@ export async function PUT(
       );
     }
     
-    // Check if user has access (admin or assigned to ecosystem)
+    // Check permissions
+    const permissions = getPermissions(session.user.role);
+
+    // Check if user can write
+    if (!permissions.canWrite) {
+      return NextResponse.json(
+        { error: 'You do not have permission to edit platforms. Required role: Write or higher.' },
+        { status: 403 }
+      );
+    }
+
+    // Check if user has access to this ecosystem
     if (session.user.role !== 'admin') {
-      const userEcosystem = await prisma.userEcosystem.findFirst({
-        where: {
-          user_id: session.user.dbId,
-          ecosystem_id: platform.ecosystem_id
-        }
+      const userEcosystems = await prisma.userEcosystem.findMany({
+        where: { user_id: session.user.dbId },
+        select: { ecosystem_id: true }
       });
-      
-      if (!userEcosystem) {
+
+      const ecosystemIds = userEcosystems.map(ue => ue.ecosystem_id);
+
+      if (!canAccessEcosystem(session.user.role, ecosystemIds, platform.ecosystem_id)) {
         return NextResponse.json(
-          { error: 'Access denied' },
+          { error: 'Access denied to this ecosystem' },
           { status: 403 }
         );
       }
     }
-    
+
     const body = await request.json();
+
+    // Get old platform data for audit logging
+    const oldPlatform = { ...platform };
     const { username, password, changed_by, ...otherFields } = body;
     
     // Use transaction to ensure atomicity
@@ -245,7 +261,25 @@ export async function PUT(
       
       return updated;
     });
-    
+
+    // Log all changes to audit log
+    const changes = extractPlatformChanges(oldPlatform, result);
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
+    const userAgent = request.headers.get('user-agent') || undefined;
+
+    for (const change of changes) {
+      await logPlatformUpdate(
+        platformId,
+        change.field,
+        change.oldValue,
+        change.newValue,
+        session.user.dbId,
+        session.user.role,
+        ipAddress,
+        userAgent
+      );
+    }
+
     // Return decrypted data
     return NextResponse.json({
       ...result,
@@ -283,8 +317,11 @@ export async function DELETE(
     }
     
     const session = await sessionRes.json();
-    
-    if (!session.user || session.user.role !== 'admin') {
+
+    // Check permissions
+    const permissions = getPermissions(session.user.role);
+
+    if (!permissions.canDeletePlatforms) {
       return NextResponse.json(
         { error: 'Only admin users can delete platforms' },
         { status: 403 }
@@ -308,19 +345,36 @@ export async function DELETE(
       );
     }
     
+    // Log deletion before deleting
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
+    const userAgent = request.headers.get('user-agent') || undefined;
+
+    await logPlatformDelete(
+      platformId,
+      session.user.dbId,
+      session.user.role,
+      ipAddress,
+      userAgent
+    );
+
     // Use transaction to delete platform and related data
     await prisma.$transaction(async (tx) => {
       // Delete credential history
       await tx.credentialHistory.deleteMany({
         where: { platform_id: platformId }
       });
-      
+
+      // Delete audit logs
+      await tx.platformAuditLog.deleteMany({
+        where: { platform_id: platformId }
+      });
+
       // Delete the platform
       await tx.socialMediaPlatform.delete({
         where: { id: platformId }
       });
     });
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting platform:', error);

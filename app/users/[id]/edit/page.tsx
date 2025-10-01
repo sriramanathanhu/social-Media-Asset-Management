@@ -238,7 +238,7 @@ export default function EditUserPage() {
                 Role
               </label>
               <select
-                value={user.role || 'user'}
+                value={user.role || 'read'}
                 onChange={(e) => setUser({ ...user, role: e.target.value })}
                 style={{
                   width: '100%',
@@ -248,9 +248,17 @@ export default function EditUserPage() {
                   fontSize: '14px'
                 }}
               >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+                <option value="read">Read - View platforms and credentials only</option>
+                <option value="write">Write - Edit platform details (with audit trail)</option>
+                <option value="manager">Manager - Read, Write, and assign ecosystems</option>
+                <option value="admin">Admin - Full access to all features</option>
               </select>
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem' }}>
+                {user.role === 'read' && 'Can view platforms and credentials but cannot edit'}
+                {user.role === 'write' && 'Can edit platform details with changes tracked in audit log'}
+                {user.role === 'manager' && 'Can read, write, and assign their ecosystems to other users'}
+                {user.role === 'admin' && 'Has full access to all system features'}
+              </p>
             </div>
           </div>
         </div>

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { getPermissions, canManagerAssignEcosystem } from '@/lib/permissions';
 
 // POST /api/ecosystems/[id]/users - Assign user to ecosystem
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const ecosystemId = parseInt(params.id);
+    const { id } = await params;
+    const ecosystemId = parseInt(id);
     const { userId } = await request.json();
 
     if (isNaN(ecosystemId) || !userId) {
@@ -33,8 +35,29 @@ export async function POST(
     }
 
     const session = await sessionRes.json();
-    if (!session.user || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Only admins can assign users' }, { status: 403 });
+
+    // Check permissions
+    const permissions = getPermissions(session.user.role);
+
+    if (!permissions.canAssignEcosystems) {
+      return NextResponse.json({ error: 'You do not have permission to assign users. Required role: Manager or Admin.' }, { status: 403 });
+    }
+
+    // For managers, verify they can assign this specific ecosystem
+    if (session.user.role === 'manager') {
+      const userEcosystems = await prisma.userEcosystem.findMany({
+        where: { user_id: session.user.dbId },
+        select: { ecosystem_id: true }
+      });
+
+      const ecosystemIds = userEcosystems.map(ue => ue.ecosystem_id);
+
+      if (!canManagerAssignEcosystem(session.user.role, ecosystemIds, ecosystemId)) {
+        return NextResponse.json(
+          { error: 'Managers can only assign ecosystems they have access to' },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if assignment already exists
@@ -87,10 +110,11 @@ export async function POST(
 // DELETE /api/ecosystems/[id]/users?userId=X - Unassign user from ecosystem
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const ecosystemId = parseInt(params.id);
+    const { id } = await params;
+    const ecosystemId = parseInt(id);
     const userId = parseInt(request.nextUrl.searchParams.get('userId') || '');
 
     if (isNaN(ecosystemId) || isNaN(userId)) {
@@ -116,8 +140,29 @@ export async function DELETE(
     }
 
     const session = await sessionRes.json();
-    if (!session.user || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Only admins can unassign users' }, { status: 403 });
+
+    // Check permissions
+    const permissions = getPermissions(session.user.role);
+
+    if (!permissions.canAssignEcosystems) {
+      return NextResponse.json({ error: 'You do not have permission to unassign users. Required role: Manager or Admin.' }, { status: 403 });
+    }
+
+    // For managers, verify they can unassign from this specific ecosystem
+    if (session.user.role === 'manager') {
+      const userEcosystems = await prisma.userEcosystem.findMany({
+        where: { user_id: session.user.dbId },
+        select: { ecosystem_id: true }
+      });
+
+      const ecosystemIds = userEcosystems.map(ue => ue.ecosystem_id);
+
+      if (!canManagerAssignEcosystem(session.user.role, ecosystemIds, ecosystemId)) {
+        return NextResponse.json(
+          { error: 'Managers can only unassign users from ecosystems they have access to' },
+          { status: 403 }
+        );
+      }
     }
 
     // Delete assignment
