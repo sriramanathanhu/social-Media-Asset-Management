@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['users', 'ecosystems', 'user-assignments'].includes(type)) {
+    if (!['users', 'ecosystems', 'user-assignments', 'bulk-import'].includes(type)) {
       return NextResponse.json(
         { success: false, message: 'Invalid import type' },
         { status: 400 }
@@ -71,13 +71,17 @@ export async function POST(request: NextRequest) {
         const result = await importUsers(headers, rows, errors);
         imported = result;
         break;
-      
+
       case 'ecosystems':
         imported = await importEcosystems(headers, rows, errors);
         break;
-      
+
       case 'user-assignments':
         imported = await importUserAssignments(headers, rows, errors, session.user.dbId);
+        break;
+
+      case 'bulk-import':
+        imported = await importBulkEcosystemsWithPlatforms(headers, rows, errors, session.user.dbId);
         break;
     }
 
@@ -288,6 +292,170 @@ async function importUserAssignments(headers: string[], rows: string[][], errors
         // Assignment already exists, skip
         errors.push(`Row ${i + 2}: User '${userEmail}' is already assigned to ecosystem '${ecosystemName}'`);
       }
+    } catch (error) {
+      errors.push(`Row ${i + 2}: ${(error as Error).message}`);
+    }
+  }
+
+  return imported;
+}
+
+async function importBulkEcosystemsWithPlatforms(headers: string[], rows: string[][], errors: string[], userId: number): Promise<number> {
+  // Import encryption function
+  const { encrypt } = await import('@/lib/utils/encryption');
+
+  // Find all column indices
+  const ecosystemNameIdx = headers.indexOf('ecosystem_name');
+  const ecosystemThemeIdx = headers.indexOf('ecosystem_theme');
+  const ecosystemDescIdx = headers.indexOf('ecosystem_description');
+  const ecosystemActiveIdx = headers.indexOf('ecosystem_active_status');
+
+  const platformNameIdx = headers.indexOf('platform_name');
+  const platformTypeIdx = headers.indexOf('platform_type');
+  const loginMethodIdx = headers.indexOf('login_method');
+  const profileUrlIdx = headers.indexOf('profile_url');
+  const profileIdIdx = headers.indexOf('profile_id');
+  const usernameIdx = headers.indexOf('username');
+  const passwordIdx = headers.indexOf('password');
+  const emailIdx = headers.indexOf('email');
+  const phoneIdx = headers.indexOf('phone');
+  const recoveryEmailIdx = headers.indexOf('recovery_email');
+  const recoveryPhoneIdx = headers.indexOf('recovery_phone');
+  const twoFaEnabledIdx = headers.indexOf('two_fa_enabled');
+  const totpEnabledIdx = headers.indexOf('totp_enabled');
+  const totpSecretIdx = headers.indexOf('totp_secret');
+  const accountStatusIdx = headers.indexOf('account_status');
+  const verificationStatusIdx = headers.indexOf('verification_status');
+  const notesIdx = headers.indexOf('notes');
+
+  if (ecosystemNameIdx === -1 || platformNameIdx === -1 || platformTypeIdx === -1) {
+    throw new Error('CSV must contain ecosystem_name, platform_name, and platform_type columns');
+  }
+
+  let imported = 0;
+  const ecosystemCache = new Map<string, number>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const ecosystemName = row[ecosystemNameIdx]?.trim();
+    const platformName = row[platformNameIdx]?.trim();
+
+    if (!ecosystemName || !platformName) {
+      errors.push(`Row ${i + 2}: Missing ecosystem_name or platform_name`);
+      continue;
+    }
+
+    try {
+      // Get or create ecosystem
+      let ecosystemId = ecosystemCache.get(ecosystemName);
+
+      if (!ecosystemId) {
+        const theme = ecosystemThemeIdx !== -1 ? row[ecosystemThemeIdx]?.trim() : 'General';
+        const description = ecosystemDescIdx !== -1 ? row[ecosystemDescIdx]?.trim() : null;
+        const activeStatusStr = ecosystemActiveIdx !== -1 ? row[ecosystemActiveIdx]?.trim().toLowerCase() : 'true';
+        const activeStatus = activeStatusStr === 'true' || activeStatusStr === '1' || activeStatusStr === 'yes';
+
+        if (!theme) {
+          errors.push(`Row ${i + 2}: Missing ecosystem_theme for new ecosystem '${ecosystemName}'`);
+          continue;
+        }
+
+        const ecosystem = await prisma.ecosystem.upsert({
+          where: { name: ecosystemName },
+          update: {
+            theme,
+            description,
+            active_status: activeStatus,
+            updated_at: new Date()
+          },
+          create: {
+            name: ecosystemName,
+            theme,
+            description,
+            active_status: activeStatus
+          }
+        });
+        ecosystemId = ecosystem.id;
+        ecosystemCache.set(ecosystemName, ecosystemId);
+      }
+
+      // Prepare platform data
+      const platformType = row[platformTypeIdx]?.trim() || 'Other';
+      const loginMethod = loginMethodIdx !== -1 ? row[loginMethodIdx]?.trim() : 'email_password';
+      const profileUrl = profileUrlIdx !== -1 ? row[profileUrlIdx]?.trim() : null;
+      const profileId = profileIdIdx !== -1 ? row[profileIdIdx]?.trim() : null;
+      const username = usernameIdx !== -1 ? row[usernameIdx]?.trim() : null;
+      const password = passwordIdx !== -1 ? row[passwordIdx]?.trim() : null;
+      const email = emailIdx !== -1 ? row[emailIdx]?.trim() : null;
+      const phone = phoneIdx !== -1 ? row[phoneIdx]?.trim() : null;
+      const recoveryEmail = recoveryEmailIdx !== -1 ? row[recoveryEmailIdx]?.trim() : null;
+      const recoveryPhone = recoveryPhoneIdx !== -1 ? row[recoveryPhoneIdx]?.trim() : null;
+      const twoFaEnabledStr = twoFaEnabledIdx !== -1 ? row[twoFaEnabledIdx]?.trim().toLowerCase() : 'false';
+      const twoFaEnabled = twoFaEnabledStr === 'true' || twoFaEnabledStr === '1' || twoFaEnabledStr === 'yes';
+      const totpEnabledStr = totpEnabledIdx !== -1 ? row[totpEnabledIdx]?.trim().toLowerCase() : 'false';
+      const totpEnabled = totpEnabledStr === 'true' || totpEnabledStr === '1' || totpEnabledStr === 'yes';
+      const totpSecret = totpSecretIdx !== -1 ? row[totpSecretIdx]?.trim() : null;
+      const accountStatus = accountStatusIdx !== -1 ? row[accountStatusIdx]?.trim() : 'active';
+      const verificationStatus = verificationStatusIdx !== -1 ? row[verificationStatusIdx]?.trim() : 'unverified';
+      const notes = notesIdx !== -1 ? row[notesIdx]?.trim() : null;
+
+      // Validate login method
+      const validLoginMethods = ['email_password', 'google_oauth', 'facebook_oauth', 'apple_id'];
+      if (!validLoginMethods.includes(loginMethod)) {
+        errors.push(`Row ${i + 2}: Invalid login_method '${loginMethod}'. Must be one of: ${validLoginMethods.join(', ')}`);
+        continue;
+      }
+
+      // Create or update platform
+      await prisma.socialMediaPlatform.upsert({
+        where: {
+          ecosystem_id_platform_name: {
+            ecosystem_id: ecosystemId,
+            platform_name: platformName
+          }
+        },
+        update: {
+          platform_type: platformType,
+          login_method: loginMethod,
+          profile_url: profileUrl,
+          profile_id: profileId,
+          username: username ? encrypt(username) : null,
+          password: password ? encrypt(password) : null,
+          email: email,
+          phone: phone,
+          recovery_email: recoveryEmail,
+          recovery_phone: recoveryPhone,
+          two_fa_enabled: twoFaEnabled,
+          totp_enabled: totpEnabled,
+          totp_secret: totpSecret ? encrypt(totpSecret) : null,
+          account_status: accountStatus,
+          verification_status: verificationStatus,
+          notes: notes,
+          updated_at: new Date()
+        },
+        create: {
+          ecosystem_id: ecosystemId,
+          platform_name: platformName,
+          platform_type: platformType,
+          login_method: loginMethod,
+          profile_url: profileUrl,
+          profile_id: profileId,
+          username: username ? encrypt(username) : null,
+          password: password ? encrypt(password) : null,
+          email: email,
+          phone: phone,
+          recovery_email: recoveryEmail,
+          recovery_phone: recoveryPhone,
+          two_fa_enabled: twoFaEnabled,
+          totp_enabled: totpEnabled,
+          totp_secret: totpSecret ? encrypt(totpSecret) : null,
+          account_status: accountStatus,
+          verification_status: verificationStatus,
+          notes: notes
+        }
+      });
+
+      imported++;
     } catch (error) {
       errors.push(`Row ${i + 2}: ${(error as Error).message}`);
     }

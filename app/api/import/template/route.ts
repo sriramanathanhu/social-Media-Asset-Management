@@ -24,6 +24,19 @@ const templates = {
       ['john.doe@example.com', 'Support Team', 'jane.admin@example.com'],
       ['user@example.com', 'Sales Region A', 'jane.admin@example.com']
     ]
+  },
+  'bulk-import': {
+    headers: [
+      'ecosystem_name', 'ecosystem_theme', 'ecosystem_description', 'ecosystem_active_status',
+      'platform_name', 'platform_type', 'login_method', 'profile_url', 'profile_id',
+      'username', 'password', 'email', 'phone', 'recovery_email', 'recovery_phone',
+      'two_fa_enabled', 'totp_enabled', 'totp_secret', 'account_status', 'verification_status', 'notes'
+    ],
+    rows: [
+      ['KAILASA Ecosystem', 'Spiritual & Cultural', 'Official spiritual and cultural content', 'true', 'KAILASA Official Facebook', 'Facebook', 'email_password', 'https://facebook.com/kailasaofficial', 'kailasaofficial', 'kailasa_admin', 'SecurePass123', 'admin@kailasa.org', '+1234567890', 'recovery@kailasa.org', '+0987654321', 'true', 'false', '', 'active', 'verified', 'Main Facebook page'],
+      ['KAILASA Ecosystem', '', '', '', 'KAILASA Twitter', 'Twitter/X', 'google_oauth', 'https://twitter.com/kailasaofficial', 'kailasaofficial', '', '', 'social@kailasa.org', '', '', '', 'false', 'false', '', 'active', 'verified', 'Login via Google OAuth'],
+      ['eCitizen Media', 'News & Media', 'News and media content', 'true', 'eCitizen News Instagram', 'Instagram', 'email_password', 'https://instagram.com/ecitizen_news', 'ecitizen_news', 'ecitizen_media', 'MediaPass456', 'news@ecitizen.media', '', '', '', 'false', 'true', 'JBSWY3DPEHPK3PXP', 'active', 'unverified', 'TOTP enabled for extra security']
+    ]
   }
 };
 
@@ -36,16 +49,16 @@ export async function GET(request: NextRequest) {
         cookie: request.headers.get('cookie') || '',
       },
     });
-    
+
     if (!sessionRes.ok) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
+
     const session = await sessionRes.json();
-    
+
     if (!session.user || session.user.role !== 'admin') {
       return NextResponse.json(
         { error: 'Only admin users can download templates' },
@@ -64,7 +77,7 @@ export async function GET(request: NextRequest) {
     }
 
     const template = templates[type];
-    
+
     // Generate CSV content
     let csvContent = template.headers.join(',') + '\n';
     template.rows.forEach(row => {

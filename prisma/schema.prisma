@@ -62,9 +62,10 @@ model SocialMediaPlatform {
   platform_name      String
   platform_type      String
   account_status     String   @default("active")
+  login_method       String   @default("email_password") // email_password, google_oauth, facebook_oauth, apple_id
   profile_url        String?
   profile_id         String?
-  username           String?  // Encrypted
+  username           String?  // Encrypted - for display/internal use, NOT for generating profile URL
   password           String?  // Encrypted
   email              String?
   phone              String?
@@ -85,11 +86,11 @@ model SocialMediaPlatform {
   followers_count    Int?
   following_count    Int?
   posts_count        Int?
-  
+
   // Relations
   ecosystem          Ecosystem           @relation(fields: [ecosystem_id], references: [id], onDelete: Cascade)
   credentialHistory  CredentialHistory[]
-  
+
   @@unique([ecosystem_id, platform_name])
 }
 
