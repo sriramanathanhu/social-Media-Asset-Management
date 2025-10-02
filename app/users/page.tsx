@@ -194,8 +194,10 @@ export default function UsersPage() {
           }}
         >
           <option value="">All Roles</option>
+          <option value="read">Read</option>
+          <option value="write">Write</option>
+          <option value="manager">Manager</option>
           <option value="admin">Admin</option>
-          <option value="user">User</option>
         </select>
         
         <div style={{ 
@@ -245,10 +247,20 @@ export default function UsersPage() {
                         padding: '0.25rem 0.75rem',
                         fontSize: '12px',
                         borderRadius: '9999px',
-                        backgroundColor: user.role === 'admin' ? '#d4edda' : '#cfe2ff',
-                        color: user.role === 'admin' ? '#155724' : '#084298'
+                        fontWeight: '500',
+                        textTransform: 'capitalize',
+                        backgroundColor:
+                          user.role === 'admin' ? '#d4edda' :
+                          user.role === 'manager' ? '#fff3cd' :
+                          user.role === 'write' ? '#cfe2ff' :
+                          '#e7e7e7',
+                        color:
+                          user.role === 'admin' ? '#155724' :
+                          user.role === 'manager' ? '#856404' :
+                          user.role === 'write' ? '#084298' :
+                          '#333'
                       }}>
-                        {user.role || "user"}
+                        {user.role || "read"}
                       </span>
                     </td>
                     <td style={{ padding: '1rem' }}>

@@ -3,14 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { 
-  Home, 
-  Globe, 
-  Users, 
+import {
+  Home,
+  Globe,
+  Users,
   Mail,
   LogOut,
   ChevronDown,
-  User
+  User,
+  Boxes,
+  BookOpen
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -46,9 +48,12 @@ export default function Sidebar() {
     );
   };
 
+  // Main navigation menu items
   const menuItems: MenuItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/ecosystems", label: "Ecosystems", icon: Globe },
+    { href: "/platforms", label: "Platforms", icon: Boxes },
+    { href: "/resources", label: "Resources", icon: BookOpen },
     ...(user?.role === 'admin' ? [
       { href: "/users", label: "User Management", icon: Users },
       { href: "/emails", label: "Email Settings", icon: Mail },

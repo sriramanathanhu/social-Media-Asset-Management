@@ -43,6 +43,15 @@ export interface Platform {
   created_at?: string;
   updated_at?: string;
   changed_by?: number;
+  live_stream?: string;
+  language?: string;
+  status?: string;
+  recovery_phone_number?: string;
+  recovery_email_id?: string;
+  added_phone_number?: string;
+  phone_number_owner?: string;
+  branding?: string;
+  connection_tool?: string;
 }
 
 export interface PlatformActivity {

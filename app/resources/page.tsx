@@ -2,14 +2,29 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Ecosystem } from "@/lib/types";
 
-export default function EcosystemsPage() {
-  const [ecosystems, setEcosystems] = useState<Ecosystem[]>([]);
+interface Resource {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  published: boolean;
+  author_id: number;
+  created_at: string;
+  updated_at: string;
+  author: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
+export default function ResourcesPage() {
+  const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [themeFilter, setThemeFilter] = useState("");
-  const [activeFilter, setActiveFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [publishedFilter, setPublishedFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -19,38 +34,36 @@ export default function EcosystemsPage() {
   });
   const [user, setUser] = useState<{ id: number; name: string; role: string } | null>(null);
 
-  const fetchEcosystems = useCallback(async () => {
+  const fetchResources = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Build query params
+
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '20',
       });
-      
+
       if (searchTerm) {
         params.append('search', searchTerm);
       }
-      
-      if (themeFilter) {
-        params.append('theme', themeFilter);
-      }
-      
-      if (activeFilter !== '') {
-        params.append('activeStatus', activeFilter);
+
+      if (categoryFilter) {
+        params.append('category', categoryFilter);
       }
 
-      const ecosystemsRes = await fetch(`/api/ecosystems?${params}`);
-      
-      if (!ecosystemsRes.ok) {
-        throw new Error("Failed to fetch ecosystems");
+      if (publishedFilter !== '') {
+        params.append('published', publishedFilter);
       }
-      
-      const ecosystemsData = await ecosystemsRes.json();
-      console.log('Ecosystems data:', ecosystemsData);
-      setEcosystems(ecosystemsData.list || []);
-      setPagination(ecosystemsData.pagination || {
+
+      const resourcesRes = await fetch(`/api/resources?${params}`);
+
+      if (!resourcesRes.ok) {
+        throw new Error("Failed to fetch resources");
+      }
+
+      const resourcesData = await resourcesRes.json();
+      setResources(resourcesData.list || []);
+      setPagination(resourcesData.pagination || {
         total: 0,
         page: 1,
         limit: 20,
@@ -61,54 +74,51 @@ export default function EcosystemsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, themeFilter, activeFilter]);
+  }, [currentPage, searchTerm, categoryFilter, publishedFilter]);
 
   useEffect(() => {
-    // Get user session first
     fetch("/api/auth/session")
       .then((res) => res.json())
       .then(async (session) => {
         if (session.user) {
           setUser(session.user);
-          fetchEcosystems();
+          fetchResources();
         }
       })
       .catch((error) => {
         console.error("Error loading data:", error);
         setLoading(false);
       });
-  }, [fetchEcosystems]);
+  }, [fetchResources]);
 
   useEffect(() => {
     if (user) {
-      fetchEcosystems();
+      fetchResources();
     }
-  }, [user, currentPage, searchTerm, themeFilter, activeFilter, fetchEcosystems]);
+  }, [user, currentPage, searchTerm, categoryFilter, publishedFilter, fetchResources]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this ecosystem?")) return;
+    if (!confirm("Are you sure you want to delete this resource?")) return;
 
     try {
-      const response = await fetch(`/api/ecosystems/${id}`, {
+      const response = await fetch(`/api/resources/${id}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
-        // Refresh the data to get updated pagination
         if (user) {
-          fetchEcosystems();
+          fetchResources();
         }
       }
     } catch (error) {
-      console.error("Error deleting ecosystem:", error);
+      console.error("Error deleting resource:", error);
     }
   };
-
 
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '16rem' }}>
-        <div style={{ color: '#666' }}>Loading ecosystems...</div>
+        <div style={{ color: '#666' }}>Loading resources...</div>
       </div>
     );
   }
@@ -118,31 +128,29 @@ export default function EcosystemsPage() {
       {/* Page Header */}
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '400', marginBottom: '0.5rem' }}>Ecosystems</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: '400', marginBottom: '0.5rem' }}>Resources</h1>
           <p style={{ fontSize: '14px', color: '#666' }}>
-            Manage your social media ecosystems and platforms
+            Create and manage SOPs, guides, and documentation
           </p>
         </div>
-        {user?.role === 'admin' && (
-          <Link
-            href="/ecosystems/new"
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#0066cc',
-              color: 'white',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              fontWeight: '500',
-              fontSize: '14px'
-            }}
-          >
-            <span style={{ fontSize: '16px' }}>+</span>
-            New Ecosystem
-          </Link>
-        )}
+        <Link
+          href="/resources/new"
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#0066cc',
+            color: 'white',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: '500',
+            fontSize: '14px'
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>+</span>
+          New Resource
+        </Link>
       </div>
 
       {/* Search and Filter Bar */}
@@ -168,11 +176,11 @@ export default function EcosystemsPage() {
           }}>🔍</span>
           <input
             type="text"
-            placeholder="Search ecosystems..."
+            placeholder="Search resources..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
+              setCurrentPage(1);
             }}
             style={{
               width: '100%',
@@ -188,10 +196,10 @@ export default function EcosystemsPage() {
           />
         </div>
         <select
-          value={themeFilter}
+          value={categoryFilter}
           onChange={(e) => {
-            setThemeFilter(e.target.value);
-            setCurrentPage(1); // Reset to first page on filter change
+            setCategoryFilter(e.target.value);
+            setCurrentPage(1);
           }}
           style={{
             padding: '0.5rem 0.75rem',
@@ -202,19 +210,17 @@ export default function EcosystemsPage() {
             minWidth: '150px'
           }}
         >
-          <option value="">All Themes</option>
-          <option value="Education">Education</option>
-          <option value="Finance">Finance</option>
-          <option value="Healthcare">Healthcare</option>
-          <option value="Business">Business</option>
-          <option value="Technology">Technology</option>
+          <option value="">All Categories</option>
+          <option value="sop">SOP</option>
+          <option value="guide">Guide</option>
+          <option value="documentation">Documentation</option>
         </select>
-        
+
         <select
-          value={activeFilter}
+          value={publishedFilter}
           onChange={(e) => {
-            setActiveFilter(e.target.value);
-            setCurrentPage(1); // Reset to first page on filter change
+            setPublishedFilter(e.target.value);
+            setCurrentPage(1);
           }}
           style={{
             padding: '0.5rem 0.75rem',
@@ -226,22 +232,22 @@ export default function EcosystemsPage() {
           }}
         >
           <option value="">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
+          <option value="true">Published</option>
+          <option value="false">Draft</option>
         </select>
-        
-        <div style={{ 
+
+        <div style={{
           padding: '0.5rem 1rem',
           backgroundColor: '#f3f4f6',
           borderRadius: '6px',
           fontSize: '13px',
           color: '#6b7280'
         }}>
-          {pagination.total} ecosystems found
+          {pagination.total} resources found
         </div>
       </div>
 
-      {/* Ecosystems Table */}
+      {/* Resources Table */}
       <div style={{
         backgroundColor: 'white',
         borderRadius: '8px',
@@ -252,71 +258,62 @@ export default function EcosystemsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px', width: '3rem' }}>
-                  <input type="checkbox" style={{ width: '16px', height: '16px', borderRadius: '4px' }} />
-                </th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Name</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Theme</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Platforms</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Assigned Users</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Title</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Category</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Author</th>
                 <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Status</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px' }}>Updated</th>
                 <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', fontSize: '14px', width: '8rem' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {ecosystems.map((ecosystem) => (
-                <tr key={ecosystem.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={{ padding: '0.75rem' }}>
-                    <input type="checkbox" style={{ width: '16px', height: '16px', borderRadius: '4px' }} />
-                  </td>
+              {resources.map((resource) => (
+                <tr key={resource.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
                   <td style={{ padding: '0.75rem' }}>
                     <div>
-                      <p style={{ fontWeight: '500', color: '#333', marginBottom: '0.25rem' }}>{ecosystem.name}</p>
-                      {ecosystem.description && (
-                        <p style={{ fontSize: '13px', color: '#666' }}>{ecosystem.description}</p>
-                      )}
+                      <p style={{ fontWeight: '500', color: '#333', marginBottom: '0.25rem' }}>{resource.title}</p>
+                      <p style={{ fontSize: '13px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '400px' }}>
+                        {resource.content.substring(0, 100)}...
+                      </p>
                     </div>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span style={{ color: '#555' }}>{ecosystem.theme}</span>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span style={{ color: '#555' }}>{ecosystem.platform_count || 0}</span>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    {ecosystem.userEcosystems && ecosystem.userEcosystems.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        {ecosystem.userEcosystems.slice(0, 2).map((ue: any) => (
-                          <span key={ue.id} style={{ fontSize: '13px', color: '#555' }}>
-                            {ue.user.name}
-                          </span>
-                        ))}
-                        {ecosystem.userEcosystems.length > 2 && (
-                          <span style={{ fontSize: '12px', color: '#888' }}>
-                            +{ecosystem.userEcosystems.length - 2} more
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span style={{ fontSize: '13px', color: '#999' }}>No users assigned</span>
-                    )}
                   </td>
                   <td style={{ padding: '0.75rem' }}>
                     <span style={{
                       padding: '0.25rem 0.75rem',
-                      backgroundColor: ecosystem.active_status ? '#d4edda' : '#f8d7da',
-                      color: ecosystem.active_status ? '#155724' : '#721c24',
+                      backgroundColor: '#e8f0fe',
+                      color: '#0066cc',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      textTransform: 'uppercase'
+                    }}>
+                      {resource.category}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <span style={{ fontSize: '13px', color: '#555' }}>{resource.author.name}</span>
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <span style={{
+                      padding: '0.25rem 0.75rem',
+                      backgroundColor: resource.published ? '#d4edda' : '#fff3cd',
+                      color: resource.published ? '#155724' : '#856404',
                       borderRadius: '20px',
                       fontSize: '12px',
                       fontWeight: '500'
                     }}>
-                      {ecosystem.active_status ? "Active" : "Inactive"}
+                      {resource.published ? "Published" : "Draft"}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <span style={{ fontSize: '13px', color: '#666' }}>
+                      {new Date(resource.updated_at).toLocaleDateString()}
                     </span>
                   </td>
                   <td style={{ padding: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Link
-                        href={`/ecosystems/${ecosystem.id}`}
+                        href={`/resources/${resource.id}`}
                         style={{
                           padding: '0.5rem',
                           backgroundColor: '#f8f9fa',
@@ -332,10 +329,10 @@ export default function EcosystemsPage() {
                       >
                         👁️
                       </Link>
-                      {user?.role === 'admin' && (
+                      {(resource.author_id === user?.id || user?.role === 'admin') && (
                         <>
                           <Link
-                            href={`/ecosystems/${ecosystem.id}/edit`}
+                            href={`/resources/${resource.id}/edit`}
                             style={{
                               padding: '0.5rem',
                               backgroundColor: '#f8f9fa',
@@ -352,7 +349,7 @@ export default function EcosystemsPage() {
                             ✏️
                           </Link>
                           <button
-                            onClick={() => handleDelete(ecosystem.id)}
+                            onClick={() => handleDelete(resource.id)}
                             style={{
                               padding: '0.5rem',
                               backgroundColor: '#fee',
@@ -373,10 +370,10 @@ export default function EcosystemsPage() {
               ))}
             </tbody>
           </table>
-          
-          {ecosystems.length === 0 && (
+
+          {resources.length === 0 && (
             <div style={{ textAlign: 'center', padding: '3rem' }}>
-              <p style={{ color: '#666' }}>No ecosystems found.</p>
+              <p style={{ color: '#666' }}>No resources found.</p>
             </div>
           )}
         </div>
@@ -394,7 +391,7 @@ export default function EcosystemsPage() {
               Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} results
             </p>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
+              <button
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
                 style={{
@@ -409,8 +406,7 @@ export default function EcosystemsPage() {
               >
                 Previous
               </button>
-              
-              {/* Page numbers */}
+
               {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 let pageNum;
                 if (pagination.totalPages <= 5) {
@@ -422,7 +418,7 @@ export default function EcosystemsPage() {
                 } else {
                   pageNum = currentPage - 2 + i;
                 }
-                
+
                 return (
                   <button
                     key={pageNum}
@@ -442,7 +438,7 @@ export default function EcosystemsPage() {
                   </button>
                 );
               })}
-              
+
               <button
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === pagination.totalPages}

@@ -24,6 +24,8 @@ export default function SimpleSidebar() {
   const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: "🏠" },
     { href: "/ecosystems", label: "Ecosystems", icon: "🌐" },
+    { href: "/platforms", label: "Platforms", icon: "📦" },
+    { href: "/resources", label: "Resources", icon: "📚" },
     ...(user?.role === 'admin' ? [
       { href: "/users", label: "Users", icon: "👥" },
       { href: "/import", label: "Import Data", icon: "📥" },
@@ -116,18 +118,22 @@ export default function SimpleSidebar() {
         <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div style={{ color: 'white', fontWeight: '500' }}>{user.name}</div>
           <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>{user.email}</div>
-          <div style={{ 
-            marginTop: '4px', 
+          <div style={{
+            marginTop: '4px',
             display: 'inline-block',
-            padding: '2px 8px', 
-            backgroundColor: user.role === 'admin' ? '#10B981' : '#3B82F6',
+            padding: '2px 8px',
+            backgroundColor:
+              user.role === 'admin' ? '#10B981' :
+              user.role === 'manager' ? '#F59E0B' :
+              user.role === 'write' ? '#3B82F6' :
+              '#6B7280',
             color: 'white',
             fontSize: '11px',
             fontWeight: '600',
             borderRadius: '4px',
-            textTransform: 'uppercase'
+            textTransform: 'capitalize'
           }}>
-            {user.role || 'User'}
+            {user.role || 'Read'}
           </div>
         </div>
       )}
@@ -138,11 +144,15 @@ export default function SimpleSidebar() {
           borderBottom: '1px solid rgba(255,255,255,0.1)',
           textAlign: 'center'
         }}>
-          <div style={{ 
+          <div style={{
             width: '35px',
             height: '35px',
             borderRadius: '50%',
-            backgroundColor: user.role === 'admin' ? '#10B981' : '#3B82F6',
+            backgroundColor:
+              user.role === 'admin' ? '#10B981' :
+              user.role === 'manager' ? '#F59E0B' :
+              user.role === 'write' ? '#3B82F6' :
+              '#6B7280',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
