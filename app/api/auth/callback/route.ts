@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
       return new Response("Missing auth_code", { status: 400 });
     }
 
-    // Use official Nandi Auth token exchange endpoint (from API docs: /auth/session/token)
-    const tokenExchangeUrl = `${process.env.NEXT_AUTH_URL}/auth/session/token`;
+    // Use official Nandi Auth token exchange endpoint (from API docs: /auth/session/exchange-token)
+    const tokenExchangeUrl = `${process.env.NEXT_AUTH_URL}/auth/session/exchange-token`;
     console.log("Calling official token exchange:", tokenExchangeUrl);
 
     const res = await fetch(tokenExchangeUrl, {

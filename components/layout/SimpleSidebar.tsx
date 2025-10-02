@@ -25,6 +25,7 @@ export default function SimpleSidebar() {
     { href: "/dashboard", label: "Dashboard", icon: "🏠" },
     { href: "/ecosystems", label: "Ecosystems", icon: "🌐" },
     { href: "/platforms", label: "Platforms", icon: "📦" },
+    { href: "/resources", label: "Resources", icon: "📚" },
     ...(user?.role === 'admin' ? [
       { href: "/users", label: "Users", icon: "👥" },
       { href: "/import", label: "Import Data", icon: "📥" },

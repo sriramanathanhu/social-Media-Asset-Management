@@ -32,7 +32,7 @@ export default function LoginPage() {
     
     // Use official Nandi Auth environment variable names
     const authUrl = process.env.NEXT_PUBLIC_NEXT_AUTH_URL || 'https://auth.kailasa.ai';
-    const clientId = process.env.NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID || '1243-2739-1026-8361';
+    const clientId = process.env.NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID || 'a6f44cfa-f82e-45c7-9d59-75677343d392';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
     
     console.log('=== NANDI AUTH DEBUG (Official Implementation) ===');

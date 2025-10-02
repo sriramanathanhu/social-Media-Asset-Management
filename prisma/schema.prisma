@@ -20,12 +20,13 @@ model User {
   updated_at  DateTime @updatedAt
 
   // Relations
-  userEcosystems       UserEcosystem[]
-  credentialHistory    CredentialHistory[]  @relation("ChangedBy")
-  assignedBy           UserEcosystem[]      @relation("AssignedBy")
-  platformAuditLogs    PlatformAuditLog[]
-  platformAccess       PlatformAccess[]     @relation("PlatformAccessUser")
+  userEcosystems        UserEcosystem[]
+  credentialHistory     CredentialHistory[] @relation("ChangedBy")
+  assignedBy            UserEcosystem[]     @relation("AssignedBy")
+  platformAuditLogs     PlatformAuditLog[]
+  platformAccess        PlatformAccess[]    @relation("PlatformAccessUser")
   grantedPlatformAccess PlatformAccess[]    @relation("PlatformAccessGrantedBy")
+  resources             Resource[]          @relation("ResourceAuthor")
 }
 
 model Ecosystem {
@@ -36,10 +37,10 @@ model Ecosystem {
   active_status Boolean  @default(true)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-  
+
   // Relations
-  platforms       SocialMediaPlatform[]
-  userEcosystems  UserEcosystem[]
+  platforms      SocialMediaPlatform[]
+  userEcosystems UserEcosystem[]
 }
 
 model UserEcosystem {
@@ -50,91 +51,91 @@ model UserEcosystem {
   assigned_at  DateTime @default(now())
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
-  
+
   // Relations
-  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  ecosystem   Ecosystem @relation(fields: [ecosystem_id], references: [id], onDelete: Cascade)
-  assignedBy  User?     @relation("AssignedBy", fields: [assigned_by], references: [id])
-  
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  ecosystem  Ecosystem @relation(fields: [ecosystem_id], references: [id], onDelete: Cascade)
+  assignedBy User?     @relation("AssignedBy", fields: [assigned_by], references: [id])
+
   @@unique([user_id, ecosystem_id]) // Prevent duplicate assignments
 }
 
 model SocialMediaPlatform {
-  id                 Int      @id @default(autoincrement())
-  ecosystem_id       Int
-  platform_name      String
-  platform_type      String
-  account_status     String   @default("active")
-  login_method       String   @default("email_password") // email_password, google_oauth, facebook_oauth, apple_id
-  profile_url        String?
-  profile_id         String?
-  username           String?  // Encrypted - for display/internal use, NOT for generating profile URL
-  password           String?  // Encrypted
-  email              String?
-  phone              String?
-  recovery_email     String?
-  recovery_phone     String?
-  two_fa_enabled     Boolean  @default(false)
-  totp_enabled       Boolean  @default(false)
-  totp_secret        String?  // Encrypted
-  bio                String?
-  profile_image_url  String?
-  cover_image_url    String?
-  verification_status String  @default("unverified")
-  notes              String?
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
-  last_checked       DateTime?
-  last_posted        DateTime?
-  followers_count    Int?
-  following_count    Int?
-  posts_count        Int?
+  id                  Int       @id @default(autoincrement())
+  ecosystem_id        Int
+  platform_name       String
+  platform_type       String
+  account_status      String    @default("active")
+  login_method        String    @default("email_password") // email_password, google_oauth, facebook_oauth, apple_id
+  profile_url         String?
+  profile_id          String?
+  username            String? // Encrypted - for display/internal use, NOT for generating profile URL
+  password            String? // Encrypted
+  email               String?
+  phone               String?
+  recovery_email      String?
+  recovery_phone      String?
+  two_fa_enabled      Boolean   @default(false)
+  totp_enabled        Boolean   @default(false)
+  totp_secret         String? // Encrypted
+  bio                 String?
+  profile_image_url   String?
+  cover_image_url     String?
+  verification_status String    @default("unverified")
+  notes               String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  last_checked        DateTime?
+  last_posted         DateTime?
+  followers_count     Int?
+  following_count     Int?
+  posts_count         Int?
 
   // New fields
-  live_stream        String?  // Enabled, Not Enabled, Not Applicable
-  language           String?
-  status             String?  // Active, Suspended, Terminated, Able to access, Incorrect Password, Missing Password, Requires Phone no
+  live_stream           String? // Enabled, Not Enabled, Not Applicable
+  language              String?
+  status                String? // Active, Suspended, Terminated, Able to access, Incorrect Password, Missing Password, Requires Phone no
   recovery_phone_number String?
-  recovery_email_id  String?
-  added_phone_number String?
-  phone_number_owner String?
-  branding           String?  // Completed, Partial, Nothing
-  connection_tool    String?  // Sprinklr, Getlate, None
+  recovery_email_id     String?
+  added_phone_number    String?
+  phone_number_owner    String?
+  branding              String? // Completed, Partial, Nothing
+  connection_tool       String? // Sprinklr, Getlate, None
 
   // Relations
-  ecosystem          Ecosystem           @relation(fields: [ecosystem_id], references: [id], onDelete: Cascade)
-  credentialHistory  CredentialHistory[]
-  auditLogs          PlatformAuditLog[]
-  platformAccess     PlatformAccess[]
+  ecosystem         Ecosystem           @relation(fields: [ecosystem_id], references: [id], onDelete: Cascade)
+  credentialHistory CredentialHistory[]
+  auditLogs         PlatformAuditLog[]
+  platformAccess    PlatformAccess[]
 
   @@unique([ecosystem_id, platform_name])
 }
 
 model CredentialHistory {
-  id           Int      @id @default(autoincrement())
-  platform_id  Int
-  field_name   String
-  old_value    String?  // Encrypted
-  new_value    String?  // Encrypted
-  changed_by   Int
-  changed_at   DateTime @default(now())
-  created_at   DateTime @default(now())
-  
+  id          Int      @id @default(autoincrement())
+  platform_id Int
+  field_name  String
+  old_value   String? // Encrypted
+  new_value   String? // Encrypted
+  changed_by  Int
+  changed_at  DateTime @default(now())
+  created_at  DateTime @default(now())
+
   // Relations
-  platform     SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
-  changedBy    User                @relation("ChangedBy", fields: [changed_by], references: [id])
+  platform  SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
+  changedBy User                @relation("ChangedBy", fields: [changed_by], references: [id])
 }
 
 model EmailId {
-  id            Int      @id @default(autoincrement())
-  email_address String   @unique
+  id             Int      @id @default(autoincrement())
+  email_address  String   @unique
   ecosystem_name String?
-  primary_use   String?
-  status        String   @default("active")
-  created_by    String?
-  notes         String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  primary_use    String?
+  status         String   @default("active")
+  created_by     String?
+  notes          String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 }
 
 model PlatformTemplate {
@@ -151,38 +152,52 @@ model PlatformTemplate {
 }
 
 model PlatformAuditLog {
-  id           Int      @id @default(autoincrement())
-  platform_id  Int
-  action       String   // create, update, delete
-  field_name   String?  // for updates, which field changed
-  old_value    String?  // previous value (for non-sensitive fields)
-  new_value    String?  // new value (for non-sensitive fields)
-  user_id      Int
-  user_role    String   // role at time of action
-  ip_address   String?
-  user_agent   String?
-  created_at   DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  platform_id Int
+  action      String // create, update, delete
+  field_name  String? // for updates, which field changed
+  old_value   String? // previous value (for non-sensitive fields)
+  new_value   String? // new value (for non-sensitive fields)
+  user_id     Int
+  user_role   String // role at time of action
+  ip_address  String?
+  user_agent  String?
+  created_at  DateTime @default(now())
 
   // Relations
-  platform     SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
-  user         User                @relation(fields: [user_id], references: [id])
+  platform SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
+  user     User                @relation(fields: [user_id], references: [id])
 }
 
 model PlatformAccess {
-  id              Int      @id @default(autoincrement())
-  platform_id     Int
-  user_id         Int
-  access_level    String   // Platform-specific role: admin, editor, moderator, analyst, etc.
-  granted_by      Int?     // User who granted this access
-  granted_at      DateTime @default(now())
-  notes           String?  // Additional notes about this access
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  platform_id  Int
+  user_id      Int
+  access_level String // Platform-specific role: admin, editor, moderator, analyst, etc.
+  granted_by   Int? // User who granted this access
+  granted_at   DateTime @default(now())
+  notes        String? // Additional notes about this access
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   // Relations
-  platform        SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
-  user            User                @relation("PlatformAccessUser", fields: [user_id], references: [id], onDelete: Cascade)
-  grantedByUser   User?               @relation("PlatformAccessGrantedBy", fields: [granted_by], references: [id])
+  platform      SocialMediaPlatform @relation(fields: [platform_id], references: [id], onDelete: Cascade)
+  user          User                @relation("PlatformAccessUser", fields: [user_id], references: [id], onDelete: Cascade)
+  grantedByUser User?               @relation("PlatformAccessGrantedBy", fields: [granted_by], references: [id])
 
   @@unique([platform_id, user_id, access_level]) // Prevent duplicate access assignments
+}
+
+model Resource {
+  id         Int      @id @default(autoincrement())
+  title      String
+  content    String // Blog post content / SOP content
+  category   String   @default("sop") // sop, guide, documentation, etc.
+  author_id  Int
+  published  Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  author User @relation("ResourceAuthor", fields: [author_id], references: [id])
 }
