@@ -201,3 +201,12 @@ model Resource {
   // Relations
   author User @relation("ResourceAuthor", fields: [author_id], references: [id])
 }
+
+model EmailSettings {
+  id           Int      @id @default(autoincrement())
+  sendgrid_api_key String?
+  from_email   String?
+  from_name    String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}

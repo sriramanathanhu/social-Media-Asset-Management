@@ -7,16 +7,16 @@ export default function EmailsPage() {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [emailSettings, setEmailSettings] = useState({
-    smtpHost: "",
-    smtpPort: "",
-    smtpUser: "",
-    smtpPassword: "",
-    fromEmail: "",
-    fromName: "",
+    sendgrid_api_key: "",
+    from_email: "",
+    from_name: "",
   });
-  
+
   const [testEmail, setTestEmail] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [hasApiKey, setHasApiKey] = useState(false);
 
   const checkPermissions = useCallback(async () => {
     try {
@@ -25,14 +25,26 @@ export default function EmailsPage() {
         router.push("/");
         return;
       }
-      
+
       const session = await sessionRes.json();
       if (!session.user || session.user.role !== 'admin') {
         router.push("/dashboard");
         return;
       }
-      
+
       setCheckingAuth(false);
+
+      // Load existing settings
+      const settingsRes = await fetch("/api/emails");
+      if (settingsRes.ok) {
+        const data = await settingsRes.json();
+        setEmailSettings({
+          sendgrid_api_key: data.sendgrid_api_key || "",
+          from_email: data.from_email || "",
+          from_name: data.from_name || "",
+        });
+        setHasApiKey(data.has_api_key || false);
+      }
     } catch (error) {
       console.error("Permission check failed:", error);
       router.push("/dashboard");
@@ -53,20 +65,76 @@ export default function EmailsPage() {
 
   const handleSaveSettings = async () => {
     setSaving(true);
-    // TODO: Implement save functionality
-    setTimeout(() => {
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailSettings),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save settings");
+      }
+
+      setMessage({ type: 'success', text: 'Email settings saved successfully!' });
+      setHasApiKey(data.has_api_key || false);
+
+      // Update the API key field with masked value
+      if (data.sendgrid_api_key) {
+        setEmailSettings(prev => ({
+          ...prev,
+          sendgrid_api_key: data.sendgrid_api_key
+        }));
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to save settings' });
+    } finally {
       setSaving(false);
-      alert("Settings saved successfully!");
-    }, 1000);
+    }
   };
 
   const handleSendTest = async () => {
     if (!testEmail) {
-      alert("Please enter an email address");
+      setMessage({ type: 'error', text: 'Please enter an email address' });
       return;
     }
-    // TODO: Implement test email functionality
-    alert(`Test email sent to ${testEmail}`);
+
+    if (!hasApiKey) {
+      setMessage({ type: 'error', text: 'Please save your SendGrid API key first' });
+      return;
+    }
+
+    setSending(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/emails/test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ to_email: testEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send test email");
+      }
+
+      setMessage({ type: 'success', text: `Test email sent successfully to ${testEmail}!` });
+      setTestEmail("");
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to send test email' });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -74,89 +142,45 @@ export default function EmailsPage() {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '24px', marginBottom: '0.5rem' }}>Email Settings</h1>
         <p style={{ color: '#666', fontSize: '14px' }}>
-          Configure email notifications and templates
+          Configure SendGrid email settings for sending notifications
         </p>
       </div>
 
+      {message && (
+        <div style={{
+          padding: '1rem',
+          marginBottom: '1.5rem',
+          backgroundColor: message.type === 'success' ? '#d1fae5' : '#fee2e2',
+          color: message.type === 'success' ? '#065f46' : '#991b1b',
+          borderRadius: '8px',
+          borderLeft: `4px solid ${message.type === 'success' ? '#10b981' : '#dc2626'}`
+        }}>
+          {message.text}
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
-        {/* SMTP Configuration */}
-        <div style={{ 
-          backgroundColor: 'white', 
-          padding: '2rem', 
+        {/* SendGrid Configuration */}
+        <div style={{
+          backgroundColor: 'white',
+          padding: '2rem',
           borderRadius: '8px',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           <h2 style={{ fontSize: '18px', marginBottom: '1.5rem', fontWeight: '600' }}>
-            SMTP Configuration
+            SendGrid Configuration
           </h2>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '14px' }}>
-                SMTP Host
-              </label>
-              <input
-                type="text"
-                placeholder="smtp.gmail.com"
-                value={emailSettings.smtpHost}
-                onChange={(e) => setEmailSettings({ ...emailSettings, smtpHost: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '14px' }}>
-                SMTP Port
-              </label>
-              <input
-                type="text"
-                placeholder="587"
-                value={emailSettings.smtpPort}
-                onChange={(e) => setEmailSettings({ ...emailSettings, smtpPort: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '14px' }}>
-                SMTP Username
-              </label>
-              <input
-                type="text"
-                placeholder="your-email@gmail.com"
-                value={emailSettings.smtpUser}
-                onChange={(e) => setEmailSettings({ ...emailSettings, smtpUser: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '14px' }}>
-                SMTP Password
+                SendGrid API Key *
               </label>
               <input
                 type="password"
-                placeholder="••••••••"
-                value={emailSettings.smtpPassword}
-                onChange={(e) => setEmailSettings({ ...emailSettings, smtpPassword: e.target.value })}
+                placeholder="SG.xxxxxxxxxxxxxxxxxxxxx"
+                value={emailSettings.sendgrid_api_key}
+                onChange={(e) => setEmailSettings({ ...emailSettings, sendgrid_api_key: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -165,17 +189,20 @@ export default function EmailsPage() {
                   fontSize: '14px'
                 }}
               />
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '0.25rem' }}>
+                Get your API key from <a href="https://app.sendgrid.com/settings/api_keys" target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc' }}>SendGrid Settings</a>
+              </p>
             </div>
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '14px' }}>
-                From Email
+                From Email *
               </label>
               <input
                 type="email"
-                placeholder="noreply@example.com"
-                value={emailSettings.fromEmail}
-                onChange={(e) => setEmailSettings({ ...emailSettings, fromEmail: e.target.value })}
+                placeholder="noreply@yourdomain.com"
+                value={emailSettings.from_email}
+                onChange={(e) => setEmailSettings({ ...emailSettings, from_email: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -184,17 +211,20 @@ export default function EmailsPage() {
                   fontSize: '14px'
                 }}
               />
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '0.25rem' }}>
+                Must be a verified sender in SendGrid
+              </p>
             </div>
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '14px' }}>
-                From Name
+                From Name *
               </label>
               <input
                 type="text"
                 placeholder="Social Media Portal"
-                value={emailSettings.fromName}
-                onChange={(e) => setEmailSettings({ ...emailSettings, fromName: e.target.value })}
+                value={emailSettings.from_name}
+                onChange={(e) => setEmailSettings({ ...emailSettings, from_name: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -225,95 +255,46 @@ export default function EmailsPage() {
           </div>
         </div>
 
-        {/* Email Templates */}
-        <div style={{ 
-          backgroundColor: 'white', 
-          padding: '2rem', 
+        {/* SendGrid Setup Guide */}
+        <div style={{
+          backgroundColor: 'white',
+          padding: '2rem',
           borderRadius: '8px',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '600' }}>
-              Email Templates
-            </h2>
-            <button
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#f8f9fa',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <span style={{ fontSize: '16px' }}>+</span>
-              Add Template
-            </button>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ 
-              padding: '1rem', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}>
-              <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Welcome Email</h4>
-              <p style={{ fontSize: '13px', color: '#666' }}>
-                Sent to new users when they join
-              </p>
-            </div>
+          <h2 style={{ fontSize: '18px', marginBottom: '1.5rem', fontWeight: '600' }}>
+            📖 Setup Guide
+          </h2>
 
-            <div style={{ 
-              padding: '1rem', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}>
-              <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Password Reset</h4>
-              <p style={{ fontSize: '13px', color: '#666' }}>
-                Sent when users request password reset
-              </p>
-            </div>
+          <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6' }}>
+            <h3 style={{ fontSize: '16px', marginBottom: '0.75rem', fontWeight: '600' }}>1. Get SendGrid API Key</h3>
+            <ol style={{ marginLeft: '1.25rem', marginBottom: '1.5rem' }}>
+              <li>Go to <a href="https://app.sendgrid.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc' }}>SendGrid</a></li>
+              <li>Navigate to Settings → API Keys</li>
+              <li>Click "Create API Key"</li>
+              <li>Name it (e.g., "Social Media Portal")</li>
+              <li>Select "Full Access" or "Mail Send"</li>
+              <li>Copy the API key (starts with SG.)</li>
+            </ol>
 
-            <div style={{ 
-              padding: '1rem', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}>
-              <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Credential Update</h4>
-              <p style={{ fontSize: '13px', color: '#666' }}>
-                Notification for credential changes
-              </p>
-            </div>
+            <h3 style={{ fontSize: '16px', marginBottom: '0.75rem', fontWeight: '600' }}>2. Verify Sender Email</h3>
+            <ol style={{ marginLeft: '1.25rem', marginBottom: '1.5rem' }}>
+              <li>Go to Settings → Sender Authentication</li>
+              <li>Click "Verify a Single Sender"</li>
+              <li>Add your "From Email" address</li>
+              <li>Check your inbox and verify the email</li>
+            </ol>
 
-            <div style={{ 
-              padding: '1rem', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}>
-              <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Weekly Report</h4>
-              <p style={{ fontSize: '13px', color: '#666' }}>
-                Weekly summary of platform activities
-              </p>
-            </div>
+            <h3 style={{ fontSize: '16px', marginBottom: '0.75rem', fontWeight: '600' }}>3. Test Configuration</h3>
+            <p>Once saved, use the test email section below to verify everything works.</p>
           </div>
         </div>
       </div>
 
       {/* Test Email Section */}
-      <div style={{ 
-        backgroundColor: 'white', 
-        padding: '2rem', 
+      <div style={{
+        backgroundColor: 'white',
+        padding: '2rem',
         borderRadius: '8px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         marginTop: '2rem'
@@ -322,9 +303,9 @@ export default function EmailsPage() {
           Test Email Configuration
         </h2>
         <p style={{ fontSize: '14px', color: '#666', marginBottom: '1rem' }}>
-          Send a test email to verify your SMTP settings are working correctly
+          Send a test email to verify your SendGrid settings are working correctly
         </p>
-        
+
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
           <div style={{ flex: 1 }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '14px' }}>
@@ -346,23 +327,31 @@ export default function EmailsPage() {
           </div>
           <button
             onClick={handleSendTest}
+            disabled={sending || !hasApiKey}
             style={{
               padding: '0.5rem 1.5rem',
-              backgroundColor: '#0066cc',
+              backgroundColor: !hasApiKey ? '#ccc' : '#0066cc',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer',
+              cursor: (!hasApiKey || sending) ? 'not-allowed' : 'pointer',
               fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              opacity: sending ? 0.6 : 1
             }}
           >
             <span>📧</span>
-            Send Test Email
+            {sending ? 'Sending...' : 'Send Test Email'}
           </button>
         </div>
+
+        {!hasApiKey && (
+          <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '0.5rem' }}>
+            ⚠️ Please save your SendGrid API key first before sending test emails
+          </p>
+        )}
       </div>
     </div>
   );
