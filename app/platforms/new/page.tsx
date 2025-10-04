@@ -429,12 +429,7 @@ function NewPlatformContent() {
               <input
                 type="text"
                 value={formData.username}
-                onChange={(e) => {
-                  setFormData({ ...formData, username: e.target.value });
-                  if (!useCustomPlatform && formData.platform_type) {
-                    generateProfileUrl(e.target.value);
-                  }
-                }}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 placeholder={getUsernameFieldLabel(formData.login_method as AuthMethod)}
                 style={{
                   width: '100%',
