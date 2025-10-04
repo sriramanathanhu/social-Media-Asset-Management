@@ -311,20 +311,13 @@ export function getUsernameFieldLabel(authMethod: AuthMethod): string {
 
 /**
  * Check if password field should be shown for auth method
+ * Note: Password field is now always shown to store account passwords even for OAuth methods
  */
 export function shouldShowPasswordField(authMethod: AuthMethod): boolean {
   const noPasswordMethods: AuthMethod[] = [
-    'google_oauth',
-    'facebook_oauth',
-    'apple_id',
-    'microsoft_oauth',
-    'yahoo_oauth',
-    'twitter_oauth',
-    'twitch_oauth',
     'cryptographic_keys',
     'ethereum_wallet',
     'phone_only',
-    'custom_sso',
   ];
   return !noPasswordMethods.includes(authMethod);
 }
@@ -334,10 +327,12 @@ export function shouldShowPasswordField(authMethod: AuthMethod): boolean {
  */
 export function getAuthMethodHelpText(authMethod: AuthMethod): string {
   const helpTexts: Partial<Record<AuthMethod, string>> = {
-    google_oauth: 'Use the Google account email that has access to this platform',
-    facebook_oauth: 'Use the Facebook account that has access to this platform',
-    apple_id: 'Use the Apple ID email that has access to this platform',
-    microsoft_oauth: 'Use the Microsoft account email that has access to this platform',
+    google_oauth: 'Enter the Google account email that has access to this platform. Password is for the account password.',
+    facebook_oauth: 'Enter the Facebook account that has access to this platform. Password is for the account password.',
+    apple_id: 'Enter the Apple ID email that has access to this platform. Password is for the account password.',
+    microsoft_oauth: 'Enter the Microsoft account email that has access to this platform. Password is for the account password.',
+    twitter_oauth: 'Enter the Twitter account that has access to this platform. Password is for the account password.',
+    twitch_oauth: 'Enter the Twitch account that has access to this platform. Password is for the account password.',
     instagram_account: 'This platform requires an Instagram account to access',
     cryptographic_keys: 'Enter your public key or npub for this platform',
     phone_only: 'This platform only requires a phone number (no password)',
