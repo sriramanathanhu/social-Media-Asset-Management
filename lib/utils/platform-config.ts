@@ -1,4 +1,4 @@
-import { 
+import {
   Youtube,
   Facebook,
   Instagram,
@@ -12,7 +12,8 @@ import {
   FileText,
   MessageSquare,
   Users,
-  Wifi
+  Wifi,
+  Mail
 } from "lucide-react";
 
 import { LucideIcon } from "lucide-react";
@@ -26,6 +27,7 @@ export interface PlatformConfig {
 }
 
 export const PLATFORM_CONFIGS: PlatformConfig[] = [
+  { name: 'Email Account', type: 'email', url: '', icon: Mail, color: '#EA4335' },
   { name: 'YouTube', type: 'video', url: 'https://www.youtube.com/signup', icon: Youtube, color: '#FF0000' },
   { name: 'Facebook', type: 'social', url: 'https://www.facebook.com/r.php', icon: Facebook, color: '#1877F2' },
   { name: 'Instagram', type: 'social', url: 'https://www.instagram.com/accounts/emailsignup/', icon: Instagram, color: '#E4405F' },
@@ -40,8 +42,6 @@ export const PLATFORM_CONFIGS: PlatformConfig[] = [
   { name: 'Mastodon', type: 'social', url: 'https://joinmastodon.org/', icon: Globe, color: '#6364FF' },
   { name: 'Telegram', type: 'messaging', url: 'https://web.telegram.org/a/', icon: MessageCircle, color: '#0088CC' },
   { name: 'Nostr', type: 'decentralized', url: 'https://nostr.com/', icon: Wifi, color: '#9B59B6' },
-  { name: 'Lemmy', type: 'forum', url: 'https://join-lemmy.org/', icon: Users, color: '#00C853' },
-  { name: 'Warpcast', type: 'decentralized', url: 'https://warpcast.com/', icon: Globe, color: '#472A91' },
   { name: 'Twitch', type: 'streaming', url: 'https://www.twitch.tv/signup', icon: Tv, color: '#9146FF' },
   { name: 'DLive', type: 'streaming', url: 'https://dlive.tv/s/', icon: Radio, color: '#FFD300' },
   { name: 'Trovo', type: 'streaming', url: 'https://trovo.live/signup', icon: Tv, color: '#19D66B' },
@@ -51,6 +51,12 @@ export const PLATFORM_CONFIGS: PlatformConfig[] = [
   { name: 'Medium', type: 'blog', url: 'https://medium.com/m/signin', icon: FileText, color: '#000000' },
   { name: 'Quora', type: 'forum', url: 'https://www.quora.com/signup', icon: MessageSquare, color: '#AA2200' },
   { name: 'Discord', type: 'messaging', url: 'https://discord.com/register', icon: MessageCircle, color: '#5865F2' },
+  { name: 'Website', type: 'website', url: '', icon: Globe, color: '#4285F4' },
+  { name: 'Tumblr', type: 'blog', url: 'https://www.tumblr.com/register', icon: FileText, color: '#35465C' },
+  { name: 'Flickr', type: 'photo', url: 'https://www.flickr.com/signup', icon: Globe, color: '#0063DC' },
+  { name: 'SoundCloud', type: 'audio', url: 'https://soundcloud.com/signup', icon: Radio, color: '#FF5500' },
+  { name: 'Substack', type: 'newsletter', url: 'https://substack.com/signup', icon: FileText, color: '#FF6719' },
+  { name: 'DeviantArt', type: 'art', url: 'https://www.deviantart.com/join', icon: Globe, color: '#05CC47' },
 ];
 
 export function getPlatformConfig(platformName: string): PlatformConfig | undefined {

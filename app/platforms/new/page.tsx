@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { getAuthMethodsForPlatform, getDefaultAuthMethod, getAuthMethodLabel, type AuthMethod } from "@/lib/platformAuthMethods";
 
 function NewPlatformContent() {
   const router = useRouter();
@@ -124,7 +125,7 @@ function NewPlatformContent() {
     { name: "YouTube", category: "Video", urlFormat: "https://youtube.com/@{username}", requiresPrefix: "@" },
     { name: "Facebook", category: "Social Network", urlFormat: "https://facebook.com/{username}" },
     { name: "Instagram", category: "Photo Sharing", urlFormat: "https://instagram.com/{username}" },
-    { name: "Twitter/X", category: "Microblogging", urlFormat: "https://x.com/{username}" },
+    { name: "Twitter (X)", category: "Microblogging", urlFormat: "https://x.com/{username}" },
     { name: "TikTok", category: "Short Video", urlFormat: "https://tiktok.com/@{username}", requiresPrefix: "@" },
     { name: "Pinterest", category: "Visual Discovery", urlFormat: "https://pinterest.com/{username}" },
     { name: "LinkedIn", category: "Professional Network", urlFormat: "https://linkedin.com/company/{username}" },
@@ -135,8 +136,6 @@ function NewPlatformContent() {
     { name: "Mastodon", category: "Federated Social", urlFormat: "https://mastodon.social/@{username}", note: "For other instances: https://{instance}/@{username}" },
     { name: "Telegram", category: "Messaging", urlFormat: "https://t.me/{username}" },
     { name: "Nostr", category: "Decentralized Protocol", urlFormat: "nostr:{npub}", note: "Use npub public key" },
-    { name: "Lemmy", category: "Link Aggregator", urlFormat: "https://lemmy.ml/u/{username}", note: "For other instances: https://{instance}/u/{username}" },
-    { name: "Warpcast", category: "Web3 Social", urlFormat: "https://warpcast.com/{username}" },
     { name: "Twitch", category: "Live Streaming", urlFormat: "https://twitch.tv/{username}" },
     { name: "DLive", category: "Blockchain Streaming", urlFormat: "https://dlive.tv/{username}" },
     { name: "Trovo", category: "Gaming Stream", urlFormat: "https://trovo.live/{username}" },
@@ -145,7 +144,13 @@ function NewPlatformContent() {
     { name: "WhatsApp Channel", category: "Messaging Channel", urlFormat: "https://whatsapp.com/channel/{channel_id}", note: "Use channel ID, not username" },
     { name: "Medium", category: "Publishing", urlFormat: "https://medium.com/@{username}", requiresPrefix: "@" },
     { name: "Quora", category: "Q&A Platform", urlFormat: "https://quora.com/profile/{username}" },
-    { name: "Discord", category: "Community Chat", urlFormat: "https://discord.gg/{invite_code}", note: "Use invite code, not username" }
+    { name: "Discord", category: "Community Chat", urlFormat: "https://discord.gg/{invite_code}", note: "Use invite code, not username" },
+    { name: "Website", category: "Website", urlFormat: "https://{username}" },
+    { name: "Tumblr", category: "Blogging", urlFormat: "https://{username}.tumblr.com" },
+    { name: "Flickr", category: "Photo Sharing", urlFormat: "https://flickr.com/photos/{username}" },
+    { name: "SoundCloud", category: "Audio", urlFormat: "https://soundcloud.com/{username}" },
+    { name: "Substack", category: "Newsletter", urlFormat: "https://{username}.substack.com" },
+    { name: "DeviantArt", category: "Art Community", urlFormat: "https://www.deviantart.com/{username}" }
   ];
 
 
@@ -246,10 +251,12 @@ function NewPlatformContent() {
                       const platformName = e.target.value;
                       const platform = standardPlatforms.find(p => p.name === platformName);
                       if (platform) {
+                        const defaultAuthMethod = getDefaultAuthMethod(platform.name);
                         setFormData({
                           ...formData,
                           platform_name: `${ecosystem?.name} ${platform.name}`,
-                          platform_type: platform.name
+                          platform_type: platform.name,
+                          login_method: defaultAuthMethod
                         });
                         // Auto-generate URL if username or profile_id is already provided
                         if (formData.username || (formData.profile_id && (platform.name === 'Discord' || platform.name === 'WhatsApp Channel' || platform.name === 'Nostr'))) {
@@ -336,106 +343,45 @@ function NewPlatformContent() {
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
                 Login Method <span style={{ color: 'red' }}>*</span>
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'email_password' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'email_password' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="email_password"
-                    checked={formData.login_method === 'email_password'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'email_password' ? '600' : '400' }}>
-                    Email & Password
-                  </span>
-                </label>
-
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'google_oauth' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'google_oauth' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="google_oauth"
-                    checked={formData.login_method === 'google_oauth'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'google_oauth' ? '600' : '400' }}>
-                    Google OAuth
-                  </span>
-                </label>
-
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'facebook_oauth' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'facebook_oauth' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="facebook_oauth"
-                    checked={formData.login_method === 'facebook_oauth'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'facebook_oauth' ? '600' : '400' }}>
-                    Facebook OAuth
-                  </span>
-                </label>
-
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'apple_id' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'apple_id' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="apple_id"
-                    checked={formData.login_method === 'apple_id'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'apple_id' ? '600' : '400' }}>
-                    Apple ID
-                  </span>
-                </label>
-              </div>
-              {formData.login_method !== 'email_password' && (
+              {formData.platform_type || useCustomPlatform ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                  {getAuthMethodsForPlatform(formData.platform_type).map((authMethod) => (
+                    <label
+                      key={authMethod}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        cursor: 'pointer',
+                        padding: '0.75rem',
+                        border: `2px solid ${formData.login_method === authMethod ? '#0066cc' : '#ddd'}`,
+                        borderRadius: '6px',
+                        backgroundColor: formData.login_method === authMethod ? '#f0f7ff' : 'white',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="login_method"
+                        value={authMethod}
+                        checked={formData.login_method === authMethod}
+                        onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
+                        style={{ width: '18px', height: '18px' }}
+                      />
+                      <span style={{ fontWeight: formData.login_method === authMethod ? '600' : '400' }}>
+                        {getAuthMethodLabel(authMethod as AuthMethod)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: '13px', color: '#999', padding: '1rem', backgroundColor: '#f9f9f9', borderRadius: '6px' }}>
+                  Please select a platform first to see available login methods
+                </p>
+              )}
+              {formData.login_method && !['email_password', 'phone_password'].includes(formData.login_method) && (
                 <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                  ℹ️ For OAuth logins, username and password fields are optional. Use the notes field to document which account is used.
+                  ℹ️ For OAuth/SSO logins, username and password fields are optional. Use the notes field to document which account is used.
                 </p>
               )}
             </div>
