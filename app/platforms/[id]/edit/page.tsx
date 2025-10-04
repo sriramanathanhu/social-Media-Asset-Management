@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import PlatformAccessManager from "@/components/PlatformAccessManager";
+import { getAuthMethodsForPlatform, getAuthMethodLabel, getUsernameFieldLabel, shouldShowPasswordField, getAuthMethodHelpText, type AuthMethod } from "@/lib/platformAuthMethods";
 
 export default function PlatformEditPage() {
   const params = useParams();
@@ -18,6 +19,7 @@ export default function PlatformEditPage() {
     username?: string;
     password?: string;
     profile_url?: string;
+    notes?: string;
     totp_enabled?: boolean;
     ecosystem_id?: number;
     live_stream?: string;
@@ -44,6 +46,7 @@ export default function PlatformEditPage() {
     username: "",
     password: "",
     profile_url: "",
+    notes: "",
     live_stream: "",
     language: "",
     status: "",
@@ -112,6 +115,7 @@ export default function PlatformEditPage() {
         username: platformData.username || "",
         password: platformData.password || "",
         profile_url: platformData.profile_url || "",
+        notes: platformData.notes || "",
         live_stream: platformData.live_stream || "",
         language: platformData.language || "",
         status: platformData.status || "",
@@ -373,105 +377,38 @@ export default function PlatformEditPage() {
                 Login Method <span style={{ color: 'red' }}>*</span>
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'email_password' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'email_password' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="email_password"
-                    checked={formData.login_method === 'email_password'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'email_password' ? '600' : '400' }}>
-                    Email & Password
-                  </span>
-                </label>
-
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'google_oauth' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'google_oauth' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="google_oauth"
-                    checked={formData.login_method === 'google_oauth'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'google_oauth' ? '600' : '400' }}>
-                    Google OAuth
-                  </span>
-                </label>
-
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'facebook_oauth' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'facebook_oauth' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="facebook_oauth"
-                    checked={formData.login_method === 'facebook_oauth'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'facebook_oauth' ? '600' : '400' }}>
-                    Facebook OAuth
-                  </span>
-                </label>
-
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  border: `2px solid ${formData.login_method === 'apple_id' ? '#0066cc' : '#ddd'}`,
-                  borderRadius: '6px',
-                  backgroundColor: formData.login_method === 'apple_id' ? '#f0f7ff' : 'white',
-                  transition: 'all 0.2s'
-                }}>
-                  <input
-                    type="radio"
-                    name="login_method"
-                    value="apple_id"
-                    checked={formData.login_method === 'apple_id'}
-                    onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
-                    style={{ width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontWeight: formData.login_method === 'apple_id' ? '600' : '400' }}>
-                    Apple ID
-                  </span>
-                </label>
+                {getAuthMethodsForPlatform(formData.platform_type).map((authMethod) => (
+                  <label
+                    key={authMethod}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                      padding: '0.75rem',
+                      border: `2px solid ${formData.login_method === authMethod ? '#0066cc' : '#ddd'}`,
+                      borderRadius: '6px',
+                      backgroundColor: formData.login_method === authMethod ? '#f0f7ff' : 'white',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="login_method"
+                      value={authMethod}
+                      checked={formData.login_method === authMethod}
+                      onChange={(e) => setFormData({ ...formData, login_method: e.target.value })}
+                      style={{ width: '18px', height: '18px' }}
+                    />
+                    <span style={{ fontWeight: formData.login_method === authMethod ? '600' : '400' }}>
+                      {getAuthMethodLabel(authMethod as AuthMethod)}
+                    </span>
+                  </label>
+                ))}
               </div>
-              {formData.login_method !== 'email_password' && (
+              {formData.login_method && !['email_password', 'phone_password'].includes(formData.login_method) && (
                 <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                  ℹ️ For OAuth logins, username and password fields are optional. Use the notes field to document which account is used.
+                  ℹ️ For OAuth/SSO logins, username and password fields are optional. Use the notes field to document which account is used.
                 </p>
               )}
             </div>
@@ -496,12 +433,13 @@ export default function PlatformEditPage() {
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Username
+                {getUsernameFieldLabel(formData.login_method as AuthMethod)}
               </label>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                placeholder={getUsernameFieldLabel(formData.login_method as AuthMethod)}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -510,25 +448,33 @@ export default function PlatformEditPage() {
                   fontSize: '14px'
                 }}
               />
+              {getAuthMethodHelpText(formData.login_method as AuthMethod) && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                  {getAuthMethodHelpText(formData.login_method as AuthMethod)}
+                </p>
+              )}
             </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
+            {shouldShowPasswordField(formData.login_method as AuthMethod) && (
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Account password"
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            )}
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -538,6 +484,7 @@ export default function PlatformEditPage() {
                 type="url"
                 value={formData.profile_url}
                 onChange={(e) => setFormData({ ...formData, profile_url: e.target.value })}
+                placeholder="https://twitter.com/username"
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -547,6 +494,28 @@ export default function PlatformEditPage() {
                 }}
               />
             </div>
+          </div>
+
+          {/* Notes Field */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Add any additional notes about this account (e.g., which OAuth account is linked, recovery options, etc.)"
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical'
+              }}
+            />
           </div>
         </div>
 
