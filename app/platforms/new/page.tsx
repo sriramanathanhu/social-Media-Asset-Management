@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getAuthMethodsForPlatform, getDefaultAuthMethod, getAuthMethodLabel, type AuthMethod } from "@/lib/platformAuthMethods";
+import { getAuthMethodsForPlatform, getDefaultAuthMethod, getAuthMethodLabel, getUsernameFieldLabel, shouldShowPasswordField, getAuthMethodHelpText, type AuthMethod } from "@/lib/platformAuthMethods";
 
 function NewPlatformContent() {
   const router = useRouter();
@@ -23,6 +23,7 @@ function NewPlatformContent() {
     username: "",
     password: "",
     profile_url: "",
+    notes: "",
     totp_enabled: false
   });
   const [useCustomPlatform, setUseCustomPlatform] = useState(false);
@@ -423,7 +424,7 @@ function NewPlatformContent() {
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                {!useCustomPlatform && (formData.platform_type === 'Discord' || formData.platform_type === 'WhatsApp Channel' || formData.platform_type === 'Nostr') ? 'Username/Display Name' : 'Username'}
+                {getUsernameFieldLabel(formData.login_method as AuthMethod)}
               </label>
               <input
                 type="text"
@@ -434,9 +435,7 @@ function NewPlatformContent() {
                     generateProfileUrl(e.target.value);
                   }
                 }}
-                placeholder={!useCustomPlatform && standardPlatforms.find(p => p.name === formData.platform_type)?.requiresPrefix ? 
-                  `Without ${standardPlatforms.find(p => p.name === formData.platform_type)?.requiresPrefix} prefix` : 
-                  "Account username"}
+                placeholder={getUsernameFieldLabel(formData.login_method as AuthMethod)}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -445,26 +444,33 @@ function NewPlatformContent() {
                   fontSize: '14px'
                 }}
               />
+              {getAuthMethodHelpText(formData.login_method as AuthMethod) && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                  {getAuthMethodHelpText(formData.login_method as AuthMethod)}
+                </p>
+              )}
             </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Account password"
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
+            {shouldShowPasswordField(formData.login_method as AuthMethod) && (
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Account password"
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            )}
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -484,6 +490,28 @@ function NewPlatformContent() {
                 }}
               />
             </div>
+          </div>
+
+          {/* Notes Field */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Add any additional notes about this account (e.g., which OAuth account is linked, recovery options, etc.)"
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical'
+              }}
+            />
           </div>
 
           <div style={{ marginTop: '1.5rem' }}>

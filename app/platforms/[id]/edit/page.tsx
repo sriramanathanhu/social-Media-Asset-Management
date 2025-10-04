@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import PlatformAccessManager from "@/components/PlatformAccessManager";
-import { getAuthMethodsForPlatform, getAuthMethodLabel, type AuthMethod } from "@/lib/platformAuthMethods";
+import { getAuthMethodsForPlatform, getAuthMethodLabel, getUsernameFieldLabel, shouldShowPasswordField, getAuthMethodHelpText, type AuthMethod } from "@/lib/platformAuthMethods";
 
 export default function PlatformEditPage() {
   const params = useParams();
@@ -19,6 +19,7 @@ export default function PlatformEditPage() {
     username?: string;
     password?: string;
     profile_url?: string;
+    notes?: string;
     totp_enabled?: boolean;
     ecosystem_id?: number;
     live_stream?: string;
@@ -45,6 +46,7 @@ export default function PlatformEditPage() {
     username: "",
     password: "",
     profile_url: "",
+    notes: "",
     live_stream: "",
     language: "",
     status: "",
@@ -113,6 +115,7 @@ export default function PlatformEditPage() {
         username: platformData.username || "",
         password: platformData.password || "",
         profile_url: platformData.profile_url || "",
+        notes: platformData.notes || "",
         live_stream: platformData.live_stream || "",
         language: platformData.language || "",
         status: platformData.status || "",
@@ -430,12 +433,13 @@ export default function PlatformEditPage() {
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Username
+                {getUsernameFieldLabel(formData.login_method as AuthMethod)}
               </label>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                placeholder={getUsernameFieldLabel(formData.login_method as AuthMethod)}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -444,25 +448,33 @@ export default function PlatformEditPage() {
                   fontSize: '14px'
                 }}
               />
+              {getAuthMethodHelpText(formData.login_method as AuthMethod) && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                  {getAuthMethodHelpText(formData.login_method as AuthMethod)}
+                </p>
+              )}
             </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
+            {shouldShowPasswordField(formData.login_method as AuthMethod) && (
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Account password"
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            )}
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -472,6 +484,7 @@ export default function PlatformEditPage() {
                 type="url"
                 value={formData.profile_url}
                 onChange={(e) => setFormData({ ...formData, profile_url: e.target.value })}
+                placeholder="https://twitter.com/username"
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -481,6 +494,28 @@ export default function PlatformEditPage() {
                 }}
               />
             </div>
+          </div>
+
+          {/* Notes Field */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Add any additional notes about this account (e.g., which OAuth account is linked, recovery options, etc.)"
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical'
+              }}
+            />
           </div>
         </div>
 

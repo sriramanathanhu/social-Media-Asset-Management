@@ -285,3 +285,63 @@ export function isAuthMethodValidForPlatform(
   const allowedMethods = getAuthMethodsForPlatform(platformType);
   return allowedMethods.includes(authMethod);
 }
+
+/**
+ * Get the appropriate label for username field based on auth method
+ */
+export function getUsernameFieldLabel(authMethod: AuthMethod): string {
+  const labels: Record<AuthMethod, string> = {
+    email_password: 'Username/Email/Phone',
+    phone_password: 'Phone Number',
+    google_oauth: 'Google Email',
+    facebook_oauth: 'Facebook Email/Username',
+    apple_id: 'Apple ID',
+    microsoft_oauth: 'Microsoft Email',
+    yahoo_oauth: 'Yahoo Email',
+    twitter_oauth: 'Twitter Username',
+    twitch_oauth: 'Twitch Username',
+    instagram_account: 'Instagram Username',
+    cryptographic_keys: 'Public Key',
+    ethereum_wallet: 'Wallet Address',
+    phone_only: 'Phone Number',
+    custom_sso: 'Username/Email',
+  };
+  return labels[authMethod] || 'Username/Email';
+}
+
+/**
+ * Check if password field should be shown for auth method
+ */
+export function shouldShowPasswordField(authMethod: AuthMethod): boolean {
+  const noPasswordMethods: AuthMethod[] = [
+    'google_oauth',
+    'facebook_oauth',
+    'apple_id',
+    'microsoft_oauth',
+    'yahoo_oauth',
+    'twitter_oauth',
+    'twitch_oauth',
+    'cryptographic_keys',
+    'ethereum_wallet',
+    'phone_only',
+    'custom_sso',
+  ];
+  return !noPasswordMethods.includes(authMethod);
+}
+
+/**
+ * Get helper text for auth method
+ */
+export function getAuthMethodHelpText(authMethod: AuthMethod): string {
+  const helpTexts: Partial<Record<AuthMethod, string>> = {
+    google_oauth: 'Use the Google account email that has access to this platform',
+    facebook_oauth: 'Use the Facebook account that has access to this platform',
+    apple_id: 'Use the Apple ID email that has access to this platform',
+    microsoft_oauth: 'Use the Microsoft account email that has access to this platform',
+    instagram_account: 'This platform requires an Instagram account to access',
+    cryptographic_keys: 'Enter your public key or npub for this platform',
+    phone_only: 'This platform only requires a phone number (no password)',
+    phone_password: 'Enter the phone number and password for this account',
+  };
+  return helpTexts[authMethod] || '';
+}
