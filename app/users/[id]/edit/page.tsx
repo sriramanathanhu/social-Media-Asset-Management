@@ -248,12 +248,14 @@ export default function EditUserPage() {
                   fontSize: '14px'
                 }}
               >
+                <option value="pending">⏳ Pending - Awaiting approval (no access)</option>
                 <option value="read">Read - View platforms and credentials only</option>
                 <option value="write">Write - Edit platform details (with audit trail)</option>
                 <option value="manager">Manager - Read, Write, and assign ecosystems</option>
                 <option value="admin">Admin - Full access to all features</option>
               </select>
               <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem' }}>
+                {user.role === 'pending' && '⚠️ User is waiting for approval - change role to grant access'}
                 {user.role === 'read' && 'Can view platforms and credentials but cannot edit'}
                 {user.role === 'write' && 'Can edit platform details with changes tracked in audit log'}
                 {user.role === 'manager' && 'Can read, write, and assign their ecosystems to other users'}

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 export async function getAuthenticatedUser() {
   try {
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("nandi_session");
+    const sessionToken = cookieStore.get("nandi_session_token");
     
     if (!sessionToken) {
       return { authenticated: false, error: "No session token" };

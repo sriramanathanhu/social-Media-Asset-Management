@@ -19,9 +19,14 @@ export default function LoginPage() {
 
     // Check if already authenticated
     fetch("/api/auth/session")
-      .then((res) => {
-        if (res.ok) {
-          router.push("/dashboard");
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          if (data.user?.role === "pending") {
+            router.push("/pending-approval");
+          } else {
+            router.push("/dashboard");
+          }
         }
       })
       .catch(console.error);

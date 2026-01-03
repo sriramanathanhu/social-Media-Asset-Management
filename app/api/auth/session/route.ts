@@ -45,11 +45,47 @@ export async function GET() {
       });
 
       if (!dbUser) {
-        console.log("User not in database, denying access");
+        // Auto-create new user with "pending" role (no access until admin approves)
+        console.log("New user detected, creating with pending status:", userEmail);
+        const nandiUser = data.user || data;
+
+        const newUser = await prisma.user.create({
+          data: {
+            email: userEmail.toLowerCase(),
+            name: nandiUser.name || nandiUser.display_name || userEmail.split('@')[0],
+            ecitizen_id: nandiUser.id || nandiUser.sub || null,
+            role: "pending", // No access until admin approves
+          }
+        });
+
         return new Response(JSON.stringify({
-          authenticated: false,
-          error: "User not authorized. Please contact administrator."
-        }), { status: 403 });
+          authenticated: true,
+          user: {
+            ...nandiUser,
+            role: newUser.role,
+            dbId: newUser.id,
+            ecitizenId: newUser.ecitizen_id,
+            isPending: true
+          },
+          provider: 'nandi',
+          message: "Account created. Please wait for admin approval."
+        }), { status: 200 });
+      }
+
+      // Check if user is pending approval
+      if (dbUser.role === "pending") {
+        return new Response(JSON.stringify({
+          authenticated: true,
+          user: {
+            ...(data.user || data),
+            role: dbUser.role,
+            dbId: dbUser.id,
+            ecitizenId: dbUser.ecitizen_id,
+            isPending: true
+          },
+          provider: 'nandi',
+          message: "Your account is pending admin approval."
+        }), { status: 200 });
       }
 
       return new Response(JSON.stringify({
