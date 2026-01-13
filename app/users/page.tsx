@@ -194,6 +194,7 @@ export default function UsersPage() {
           }}
         >
           <option value="">All Roles</option>
+          <option value="pending">⏳ Pending Approval</option>
           <option value="read">Read</option>
           <option value="write">Write</option>
           <option value="manager">Manager</option>

@@ -19,33 +19,27 @@ export default function LoginPage() {
 
     // Check if already authenticated
     fetch("/api/auth/session")
-      .then((res) => {
-        if (res.ok) {
-          router.push("/dashboard");
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          if (data.user?.role === "pending") {
+            router.push("/pending-approval");
+          } else {
+            router.push("/dashboard");
+          }
         }
       })
       .catch(console.error);
   }, [router]);
 
   const handleLogin = () => {
-    console.log('Nandi Auth login clicked (official implementation)');
-    
-    // Use official Nandi Auth environment variable names
     const authUrl = process.env.NEXT_PUBLIC_NEXT_AUTH_URL || 'https://auth.kailasa.ai';
-    const clientId = process.env.NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID || 'a6f44cfa-f82e-45c7-9d59-75677343d392';
+    const clientId = process.env.NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    
-    console.log('=== NANDI AUTH DEBUG (Official Implementation) ===');
-    console.log('- NEXT_PUBLIC_NEXT_AUTH_URL:', authUrl);
-    console.log('- NEXT_PUBLIC_NEXT_AUTH_CLIENT_ID:', clientId);
-    console.log('- NEXT_PUBLIC_BASE_URL:', baseUrl);
-    
-    // Use official Nandi Auth URL format (matches the example)
-    const fullAuthUrl = `${authUrl}/auth/sign-in?client_id=${clientId}&redirect_uri=${baseUrl}/api/auth/callback`;
-    
-    console.log('Generated auth URL:', fullAuthUrl);
-    console.log('Redirecting to official Nandi Auth endpoint...');
-    
+
+    // Use official Nandi Auth URL format: /auth/sign-in/email
+    const fullAuthUrl = `${authUrl}/auth/sign-in/email?client_id=${clientId}&redirect_uri=${baseUrl}/api/auth/callback`;
+
     window.location.href = fullAuthUrl;
   };
 
