@@ -12,7 +12,8 @@ import {
   ChevronDown,
   User,
   Boxes,
-  BookOpen
+  BookOpen,
+  Lock
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -53,6 +54,7 @@ export default function Sidebar() {
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/ecosystems", label: "Ecosystems", icon: Globe },
     { href: "/platforms", label: "Platforms", icon: Boxes },
+    { href: "/secure-logins", label: "Secure Logins", icon: Lock },
     { href: "/resources", label: "Resources", icon: BookOpen },
     ...(user?.role === 'admin' ? [
       { href: "/users", label: "User Management", icon: Users },
