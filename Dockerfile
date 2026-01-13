@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Install dependencies for native modules
 RUN apk add --no-cache libc6-compat python3 make g++
@@ -33,7 +33,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 
 # Install PostgreSQL client and curl for database operations and healthcheck
 RUN apk add --no-cache libc6-compat postgresql-client curl
