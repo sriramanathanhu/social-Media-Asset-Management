@@ -27,6 +27,16 @@ model User {
   platformAccess        PlatformAccess[]    @relation("PlatformAccessUser")
   grantedPlatformAccess PlatformAccess[]    @relation("PlatformAccessGrantedBy")
   resources             Resource[]          @relation("ResourceAuthor")
+
+  // Secure Logins relations
+  secureLogins                  SecureLogin[]             @relation("SecureLoginOwner")
+  secureLoginGroups             SecureLoginGroup[]        @relation("SecureLoginGroupOwner")
+  secureLoginGroupMemberships   SecureLoginGroupMember[]  @relation("SecureLoginGroupMember")
+  addedSecureLoginGroupMembers  SecureLoginGroupMember[]  @relation("SecureLoginGroupMemberAddedBy")
+  secureLoginUserAccess         SecureLoginUserAccess[]   @relation("SecureLoginUserAccess")
+  grantedSecureLoginUserAccess  SecureLoginUserAccess[]   @relation("SecureLoginUserAccessGrantedBy")
+  grantedSecureLoginGroupAccess SecureLoginGroupAccess[]  @relation("SecureLoginGroupAccessGrantedBy")
+  secureLoginHistory            SecureLoginHistory[]      @relation("SecureLoginHistoryChangedBy")
 }
 
 model Ecosystem {
@@ -136,6 +146,9 @@ model EmailId {
   notes          String?
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
+
+  // Secure Logins relation (for Google OAuth accounts)
+  secureLogins SecureLogin[]
 }
 
 model PlatformTemplate {
@@ -209,4 +222,111 @@ model EmailSettings {
   from_name    String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
+}
+
+// ==========================================
+// SECURE LOGINS (PASSWORD VAULT) MODELS
+// ==========================================
+
+model SecureLogin {
+  id                Int       @id @default(autoincrement())
+  item_name         String
+  username          String?   // Encrypted
+  password          String?   // Encrypted
+  totp_secret       String?   // Encrypted - TOTP Authenticator Key
+  website_url       String?
+  notes             String?
+  login_type        String    @default("email_password") // email_password, google_oauth
+  google_account_id Int?      // Reference to EmailId for Google OAuth
+  owner_id          Int
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  // Relations
+  owner         User                    @relation("SecureLoginOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  googleAccount EmailId?                @relation(fields: [google_account_id], references: [id])
+  userAccess    SecureLoginUserAccess[]
+  groupAccess   SecureLoginGroupAccess[]
+  history       SecureLoginHistory[]
+}
+
+model SecureLoginGroup {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  owner_id    Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  owner       User                      @relation("SecureLoginGroupOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  members     SecureLoginGroupMember[]
+  loginAccess SecureLoginGroupAccess[]
+
+  @@unique([name, owner_id]) // Unique group name per owner
+}
+
+model SecureLoginGroupMember {
+  id       Int      @id @default(autoincrement())
+  group_id Int
+  user_id  Int
+  role     String   @default("member") // member, admin (group admin)
+  added_by Int?
+  added_at DateTime @default(now())
+
+  // Relations
+  group       SecureLoginGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  user        User             @relation("SecureLoginGroupMember", fields: [user_id], references: [id], onDelete: Cascade)
+  addedByUser User?            @relation("SecureLoginGroupMemberAddedBy", fields: [added_by], references: [id])
+
+  @@unique([group_id, user_id])
+}
+
+model SecureLoginUserAccess {
+  id              Int      @id @default(autoincrement())
+  secure_login_id Int
+  user_id         Int
+  access_level    String   // read, edit
+  granted_by      Int?
+  granted_at      DateTime @default(now())
+
+  // Relations
+  secureLogin   SecureLogin @relation(fields: [secure_login_id], references: [id], onDelete: Cascade)
+  user          User        @relation("SecureLoginUserAccess", fields: [user_id], references: [id], onDelete: Cascade)
+  grantedByUser User?       @relation("SecureLoginUserAccessGrantedBy", fields: [granted_by], references: [id])
+
+  @@unique([secure_login_id, user_id])
+}
+
+model SecureLoginGroupAccess {
+  id              Int      @id @default(autoincrement())
+  secure_login_id Int
+  group_id        Int
+  access_level    String   // read, edit
+  granted_by      Int?
+  granted_at      DateTime @default(now())
+
+  // Relations
+  secureLogin   SecureLogin      @relation(fields: [secure_login_id], references: [id], onDelete: Cascade)
+  group         SecureLoginGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  grantedByUser User?            @relation("SecureLoginGroupAccessGrantedBy", fields: [granted_by], references: [id])
+
+  @@unique([secure_login_id, group_id])
+}
+
+model SecureLoginHistory {
+  id              Int      @id @default(autoincrement())
+  secure_login_id Int
+  action          String   // create, update, delete, access_granted, access_revoked
+  field_name      String?
+  old_value       String?  // Encrypted for sensitive fields
+  new_value       String?  // Encrypted for sensitive fields
+  changed_by      Int
+  ip_address      String?
+  user_agent      String?
+  created_at      DateTime @default(now())
+
+  // Relations
+  secureLogin   SecureLogin @relation(fields: [secure_login_id], references: [id], onDelete: Cascade)
+  changedByUser User        @relation("SecureLoginHistoryChangedBy", fields: [changed_by], references: [id])
 }
