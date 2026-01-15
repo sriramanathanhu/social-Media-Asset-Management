@@ -3,12 +3,19 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Lock, Mail, Key, Globe, FileText, Shield, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Lock, Mail, Key, Globe, FileText, Shield, Loader2, FolderOpen } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
 import TOTPField from "@/components/TOTPField";
 import GoogleAccountSelector from "@/components/GoogleAccountSelector";
 
 type LoginType = "email_password" | "google_oauth";
+
+interface SecureLoginFolder {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  children?: SecureLoginFolder[];
+}
 
 interface SecureLogin {
   id: number;
@@ -20,6 +27,7 @@ interface SecureLogin {
   website_url: string | null;
   notes: string | null;
   linked_google_account_id: number | null;
+  folder_id: number | null;
 }
 
 export default function EditSecureLoginPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,10 +47,59 @@ export default function EditSecureLoginPage({ params }: { params: Promise<{ id: 
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [linkedGoogleAccountId, setLinkedGoogleAccountId] = useState<number | null>(null);
+  const [folderId, setFolderId] = useState<number | null>(null);
+  const [folders, setFolders] = useState<SecureLoginFolder[]>([]);
 
   useEffect(() => {
     loadSecureLogin();
+    loadFolders();
   }, [resolvedParams.id]);
+
+  const loadFolders = async () => {
+    try {
+      const res = await fetch("/api/secure-logins/folders");
+      if (res.ok) {
+        const data = await res.json();
+        setFolders(data.folders || []);
+      }
+    } catch (err) {
+      console.error("Error loading folders:", err);
+    }
+  };
+
+  // Build folder options for dropdown with hierarchy
+  const getFolderOptions = (folderList: SecureLoginFolder[], depth = 0): { id: number; name: string; depth: number }[] => {
+    const options: { id: number; name: string; depth: number }[] = [];
+    for (const folder of folderList) {
+      options.push({ id: folder.id, name: folder.name, depth });
+      if (folder.children && folder.children.length > 0) {
+        options.push(...getFolderOptions(folder.children, depth + 1));
+      }
+    }
+    return options;
+  };
+
+  // Build folder tree from flat list
+  const buildFolderTree = (flatFolders: SecureLoginFolder[]): SecureLoginFolder[] => {
+    const folderMap = new Map<number, SecureLoginFolder>();
+    const roots: SecureLoginFolder[] = [];
+
+    flatFolders.forEach(f => folderMap.set(f.id, { ...f, children: [] }));
+
+    flatFolders.forEach(f => {
+      const folder = folderMap.get(f.id)!;
+      if (f.parent_id && folderMap.has(f.parent_id)) {
+        folderMap.get(f.parent_id)!.children!.push(folder);
+      } else {
+        roots.push(folder);
+      }
+    });
+
+    return roots;
+  };
+
+  const folderTree = buildFolderTree(folders);
+  const folderOptions = getFolderOptions(folderTree);
 
   const loadSecureLogin = async () => {
     try {
@@ -78,6 +135,7 @@ export default function EditSecureLoginPage({ params }: { params: Promise<{ id: 
         setWebsiteUrl(sl.website_url || "");
         setNotes(sl.notes || "");
         setLinkedGoogleAccountId(sl.linked_google_account_id);
+        setFolderId(sl.folder_id);
       } else {
         setError("Failed to load secure login");
       }
@@ -124,6 +182,7 @@ export default function EditSecureLoginPage({ params }: { params: Promise<{ id: 
           website_url: websiteUrl.trim() || null,
           notes: notes.trim() || null,
           linked_google_account_id: loginType === "google_oauth" ? linkedGoogleAccountId : null,
+          folder_id: folderId,
         }),
       });
 
@@ -344,6 +403,44 @@ export default function EditSecureLoginPage({ params }: { params: Promise<{ id: 
                 </span>
               </label>
             </div>
+          </div>
+
+          {/* Folder Selection */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                fontWeight: "500",
+                fontSize: "14px",
+                color: "#333",
+              }}
+            >
+              <FolderOpen size={14} style={{ display: "inline", marginRight: "0.5rem", verticalAlign: "middle" }} />
+              Folder (Optional)
+            </label>
+            <select
+              value={folderId ?? ""}
+              onChange={(e) => setFolderId(e.target.value ? parseInt(e.target.value) : null)}
+              style={{
+                width: "100%",
+                padding: "0.5rem 0.75rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="">No folder (Root level)</option>
+              {folderOptions.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {"  ".repeat(folder.depth)}{folder.depth > 0 ? "└ " : ""}{folder.name}
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: "12px", color: "#666", marginTop: "0.25rem" }}>
+              Organize this login into a folder for easier management
+            </p>
           </div>
 
           {/* Conditional Fields based on Login Type */}

@@ -30,12 +30,15 @@ const templates = {
       'ecosystem_name', 'ecosystem_theme', 'ecosystem_description', 'ecosystem_active_status',
       'platform_name', 'platform_type', 'login_method', 'profile_url', 'profile_id',
       'username', 'password', 'email', 'phone', 'recovery_email', 'recovery_phone',
-      'two_fa_enabled', 'totp_enabled', 'totp_secret', 'account_status', 'verification_status', 'notes'
+      'two_fa_enabled', 'totp_enabled', 'totp_secret', 'account_status', 'verification_status', 'notes',
+      // New metadata fields
+      'live_stream', 'language', 'status', 'recovery_phone_number', 'recovery_email_id',
+      'added_phone_number', 'phone_number_owner', 'branding', 'connection_tool'
     ],
     rows: [
-      ['KAILASA Ecosystem', 'Spiritual & Cultural', 'Official spiritual and cultural content', 'true', 'KAILASA Official Facebook', 'Facebook', 'email_password', 'https://facebook.com/kailasaofficial', 'kailasaofficial', 'kailasa_admin', 'SecurePass123', 'admin@kailasa.org', '+1234567890', 'recovery@kailasa.org', '+0987654321', 'true', 'false', '', 'active', 'verified', 'Main Facebook page'],
-      ['KAILASA Ecosystem', '', '', '', 'KAILASA Twitter', 'Twitter/X', 'google_oauth', 'https://twitter.com/kailasaofficial', 'kailasaofficial', '', '', 'social@kailasa.org', '', '', '', 'false', 'false', '', 'active', 'verified', 'Login via Google OAuth'],
-      ['eCitizen Media', 'News & Media', 'News and media content', 'true', 'eCitizen News Instagram', 'Instagram', 'email_password', 'https://instagram.com/ecitizen_news', 'ecitizen_news', 'ecitizen_media', 'MediaPass456', 'news@ecitizen.media', '', '', '', 'false', 'true', 'JBSWY3DPEHPK3PXP', 'active', 'unverified', 'TOTP enabled for extra security']
+      ['KAILASA Ecosystem', 'Spiritual & Cultural', 'Official spiritual and cultural content', 'true', 'KAILASA Official Facebook', 'Facebook', 'email_password', 'https://facebook.com/kailasaofficial', 'kailasaofficial', 'kailasa_admin', 'SecurePass123', 'admin@kailasa.org', '+1234567890', 'recovery@kailasa.org', '+0987654321', 'true', 'false', '', 'active', 'verified', 'Main Facebook page', 'Enabled', 'English', 'Active', '+1234567890', 'recovery@kailasa.org', '+1234567890', 'Kailasa Admin', 'Completed', 'Sprinklr'],
+      ['KAILASA Ecosystem', '', '', '', 'KAILASA Twitter', 'Twitter/X', 'google_oauth', 'https://twitter.com/kailasaofficial', 'kailasaofficial', '', '', 'social@kailasa.org', '', '', '', 'false', 'false', '', 'active', 'verified', 'Login via Google OAuth', 'Not Applicable', 'English', 'Active', '', '', '', '', 'Partial', 'None'],
+      ['eCitizen Media', 'News & Media', 'News and media content', 'true', 'eCitizen News Instagram', 'Instagram', 'email_password', 'https://instagram.com/ecitizen_news', 'ecitizen_news', 'ecitizen_media', 'MediaPass456', 'news@ecitizen.media', '', '', '', 'false', 'true', 'JBSWY3DPEHPK3PXP', 'active', 'unverified', 'TOTP enabled for extra security', 'Not Enabled', 'English', 'Able to access', '', 'news@ecitizen.media', '', '', 'Nothing', 'Getlate']
     ]
   }
 };

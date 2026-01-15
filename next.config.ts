@@ -7,12 +7,6 @@ const nextConfig: NextConfig = {
   },
   // External packages for server-side use
   serverExternalPackages: ['@prisma/client', 'prisma'],
-  eslint: {
-    // Only run ESLint on specific directories during production builds
-    dirs: ['app', 'components', 'lib'],
-    // Ignore ESLint errors during build to prevent build failures
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     // Ignore TypeScript errors during build to prevent build failures
     ignoreBuildErrors: true,
@@ -21,10 +15,6 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   // Disable Next.js branding header
   poweredByHeader: false,
-  // Experimental features - removed conflicting optimizePackageImports
-  experimental: {
-    // Other experimental features can go here if needed
-  },
 };
 
 export default nextConfig;

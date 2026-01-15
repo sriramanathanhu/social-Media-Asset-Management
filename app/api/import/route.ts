@@ -328,6 +328,17 @@ async function importBulkEcosystemsWithPlatforms(headers: string[], rows: string
   const verificationStatusIdx = headers.indexOf('verification_status');
   const notesIdx = headers.indexOf('notes');
 
+  // New metadata fields
+  const liveStreamIdx = headers.indexOf('live_stream');
+  const languageIdx = headers.indexOf('language');
+  const statusIdx = headers.indexOf('status');
+  const recoveryPhoneNumberIdx = headers.indexOf('recovery_phone_number');
+  const recoveryEmailIdIdx = headers.indexOf('recovery_email_id');
+  const addedPhoneNumberIdx = headers.indexOf('added_phone_number');
+  const phoneNumberOwnerIdx = headers.indexOf('phone_number_owner');
+  const brandingIdx = headers.indexOf('branding');
+  const connectionToolIdx = headers.indexOf('connection_tool');
+
   if (ecosystemNameIdx === -1 || platformNameIdx === -1 || platformTypeIdx === -1) {
     throw new Error('CSV must contain ecosystem_name, platform_name, and platform_type columns');
   }
@@ -399,6 +410,17 @@ async function importBulkEcosystemsWithPlatforms(headers: string[], rows: string
       const verificationStatus = verificationStatusIdx !== -1 ? row[verificationStatusIdx]?.trim() : 'unverified';
       const notes = notesIdx !== -1 ? row[notesIdx]?.trim() : null;
 
+      // New metadata fields
+      const liveStream = liveStreamIdx !== -1 ? row[liveStreamIdx]?.trim() : null;
+      const language = languageIdx !== -1 ? row[languageIdx]?.trim() : null;
+      const status = statusIdx !== -1 ? row[statusIdx]?.trim() : null;
+      const recoveryPhoneNumber = recoveryPhoneNumberIdx !== -1 ? row[recoveryPhoneNumberIdx]?.trim() : null;
+      const recoveryEmailId = recoveryEmailIdIdx !== -1 ? row[recoveryEmailIdIdx]?.trim() : null;
+      const addedPhoneNumber = addedPhoneNumberIdx !== -1 ? row[addedPhoneNumberIdx]?.trim() : null;
+      const phoneNumberOwner = phoneNumberOwnerIdx !== -1 ? row[phoneNumberOwnerIdx]?.trim() : null;
+      const branding = brandingIdx !== -1 ? row[brandingIdx]?.trim() : null;
+      const connectionTool = connectionToolIdx !== -1 ? row[connectionToolIdx]?.trim() : null;
+
       // Validate login method
       const validLoginMethods = ['email_password', 'google_oauth', 'facebook_oauth', 'apple_id'];
       if (!validLoginMethods.includes(loginMethod)) {
@@ -431,6 +453,16 @@ async function importBulkEcosystemsWithPlatforms(headers: string[], rows: string
           account_status: accountStatus,
           verification_status: verificationStatus,
           notes: notes,
+          // New metadata fields
+          live_stream: liveStream,
+          language: language,
+          status: status,
+          recovery_phone_number: recoveryPhoneNumber,
+          recovery_email_id: recoveryEmailId,
+          added_phone_number: addedPhoneNumber,
+          phone_number_owner: phoneNumberOwner,
+          branding: branding,
+          connection_tool: connectionTool,
           updated_at: new Date()
         },
         create: {
@@ -451,7 +483,17 @@ async function importBulkEcosystemsWithPlatforms(headers: string[], rows: string
           totp_secret: totpSecret ? encrypt(totpSecret) : null,
           account_status: accountStatus,
           verification_status: verificationStatus,
-          notes: notes
+          notes: notes,
+          // New metadata fields
+          live_stream: liveStream,
+          language: language,
+          status: status,
+          recovery_phone_number: recoveryPhoneNumber,
+          recovery_email_id: recoveryEmailId,
+          added_phone_number: addedPhoneNumber,
+          phone_number_owner: phoneNumberOwner,
+          branding: branding,
+          connection_tool: connectionTool
         }
       });
 

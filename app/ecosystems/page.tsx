@@ -18,6 +18,7 @@ export default function EcosystemsPage() {
     totalPages: 1
   });
   const [user, setUser] = useState<{ id: number; name: string; role: string } | null>(null);
+  const [availableThemes, setAvailableThemes] = useState<string[]>([]);
 
   const fetchEcosystems = useCallback(async () => {
     try {
@@ -63,6 +64,26 @@ export default function EcosystemsPage() {
     }
   }, [currentPage, searchTerm, themeFilter, activeFilter]);
 
+  // Fetch available themes from all ecosystems
+  const fetchAvailableThemes = useCallback(async () => {
+    try {
+      // Fetch all ecosystems without pagination to get all themes
+      const res = await fetch('/api/ecosystems?limit=1000');
+      if (res.ok) {
+        const data = await res.json();
+        const themes = (data.list || [])
+          .map((eco: Ecosystem) => eco.theme)
+          .filter((theme: string | null) => theme && theme.trim() !== '');
+        // Get unique themes and sort alphabetically
+        const uniqueThemes = [...new Set(themes)] as string[];
+        uniqueThemes.sort((a, b) => a.localeCompare(b));
+        setAvailableThemes(uniqueThemes);
+      }
+    } catch (error) {
+      console.error("Error fetching themes:", error);
+    }
+  }, []);
+
   useEffect(() => {
     // Get user session first
     fetch("/api/auth/session")
@@ -71,13 +92,14 @@ export default function EcosystemsPage() {
         if (session.user) {
           setUser(session.user);
           fetchEcosystems();
+          fetchAvailableThemes();
         }
       })
       .catch((error) => {
         console.error("Error loading data:", error);
         setLoading(false);
       });
-  }, [fetchEcosystems]);
+  }, [fetchEcosystems, fetchAvailableThemes]);
 
   useEffect(() => {
     if (user) {
@@ -203,11 +225,9 @@ export default function EcosystemsPage() {
           }}
         >
           <option value="">All Themes</option>
-          <option value="Education">Education</option>
-          <option value="Finance">Finance</option>
-          <option value="Healthcare">Healthcare</option>
-          <option value="Business">Business</option>
-          <option value="Technology">Technology</option>
+          {availableThemes.map((theme) => (
+            <option key={theme} value={theme}>{theme}</option>
+          ))}
         </select>
         
         <select

@@ -1,19 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Lock, Mail, Key, Globe, FileText, Shield } from "lucide-react";
+import { ArrowLeft, Save, Lock, Mail, Key, Globe, FileText, Shield, Folder } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
 import TOTPField from "@/components/TOTPField";
 import GoogleAccountSelector from "@/components/GoogleAccountSelector";
 
 type LoginType = "email_password" | "google_oauth";
 
+interface SecureLoginFolder {
+  id: number;
+  name: string;
+  color: string;
+  parent_id: number | null;
+}
+
 export default function NewSecureLoginPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [folders, setFolders] = useState<SecureLoginFolder[]>([]);
 
   // Form state
   const [itemName, setItemName] = useState("");
@@ -24,6 +32,17 @@ export default function NewSecureLoginPage() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [linkedGoogleAccountId, setLinkedGoogleAccountId] = useState<number | null>(null);
+  const [folderId, setFolderId] = useState<number | null>(null);
+
+  // Load folders
+  useEffect(() => {
+    fetch("/api/secure-logins/folders")
+      .then((res) => res.json())
+      .then((data) => {
+        setFolders(data.folders || []);
+      })
+      .catch((err) => console.error("Error loading folders:", err));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +79,7 @@ export default function NewSecureLoginPage() {
           website_url: websiteUrl.trim() || null,
           notes: notes.trim() || null,
           linked_google_account_id: loginType === "google_oauth" ? linkedGoogleAccountId : null,
+          folder_id: folderId,
         }),
       });
 
@@ -76,6 +96,21 @@ export default function NewSecureLoginPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Build folder options with hierarchy indication
+  const getFolderOptions = () => {
+    const rootFolders = folders.filter(f => f.parent_id === null);
+    const options: { id: number; name: string; depth: number }[] = [];
+
+    const addFolder = (folder: SecureLoginFolder, depth: number) => {
+      options.push({ id: folder.id, name: folder.name, depth });
+      const children = folders.filter(f => f.parent_id === folder.id);
+      children.forEach(child => addFolder(child, depth + 1));
+    };
+
+    rootFolders.forEach(folder => addFolder(folder, 0));
+    return options;
   };
 
   return (
@@ -159,6 +194,44 @@ export default function NewSecureLoginPage() {
                 fontSize: "14px",
               }}
             />
+          </div>
+
+          {/* Folder Selection */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                fontWeight: "500",
+                fontSize: "14px",
+                color: "#333",
+              }}
+            >
+              <Folder size={14} style={{ display: "inline", marginRight: "0.5rem", verticalAlign: "middle" }} />
+              Folder (Optional)
+            </label>
+            <select
+              value={folderId || ""}
+              onChange={(e) => setFolderId(e.target.value ? parseInt(e.target.value) : null)}
+              style={{
+                width: "100%",
+                padding: "0.5rem 0.75rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="">No folder (Root level)</option>
+              {getFolderOptions().map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {"—".repeat(folder.depth)} {folder.name}
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: "12px", color: "#888", marginTop: "0.25rem" }}>
+              Organize this login into a folder for easier management
+            </p>
           </div>
 
           {/* Login Type */}
