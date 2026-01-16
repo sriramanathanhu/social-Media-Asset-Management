@@ -97,60 +97,41 @@ fi
 
 log_success "Prisma client generated successfully"
 
-# Run database setup - use migrate deploy for safe production deployments
+# Run database setup - use db push WITHOUT --accept-data-loss to preserve existing data
 log "Setting up database schema with Prisma..."
+log "Using 'prisma db push' (safe mode - preserves existing data)"
+log ""
+log "IMPORTANT: This will only apply ADDITIVE changes (new tables, new columns)."
+log "If the schema requires destructive changes, deployment will fail safely."
 
-# Check if migrations folder exists and has migrations
-if [ -d "prisma/migrations" ] && [ "$(ls -A prisma/migrations 2>/dev/null)" ]; then
-  log "Found migrations folder, using 'prisma migrate deploy' for safe deployment"
-
-  # Apply pending migrations (safe for production - no data loss)
-  if npx prisma migrate deploy 2>&1 | tee /tmp/migrate.log; then
-    log_success "Database migrations applied successfully"
-  else
-    log_warning "Migrate deploy had issues, checking details..."
-    cat /tmp/migrate.log
-
-    # If migrate deploy fails, try db push without --accept-data-loss
-    log "Attempting fallback with db push (safe mode - no data loss)..."
-    if npx prisma db push 2>&1 | tee /tmp/push.log; then
-      log_success "Database schema synchronized with db push"
-    else
-      log_error "Schema synchronization failed!"
-      log "Error details:"
-      cat /tmp/push.log
-      log ""
-      log "IMPORTANT: If this error mentions 'data loss', the schema change"
-      log "would delete existing data. You need to either:"
-      log "1. Backup your data first and manually approve the changes"
-      log "2. Create proper Prisma migrations that preserve data"
-      log "3. Modify the schema to be backwards compatible"
-      exit 1
-    fi
-  fi
+if npx prisma db push 2>&1 | tee /tmp/push.log; then
+  log_success "Database schema synchronized successfully"
+  log "All schema changes applied without data loss"
 else
-  # No migrations folder - use db push but WITHOUT --accept-data-loss
-  log "No migrations folder found, using 'prisma db push' (safe mode)"
-  log_warning "For production, consider using Prisma migrations for better control"
-
-  if npx prisma db push 2>&1 | tee /tmp/push.log; then
-    log_success "Database schema synchronized successfully"
-  else
-    log_error "Database schema creation failed!"
-    log "Error details:"
-    cat /tmp/push.log
-    log ""
-    log "Common solutions:"
-    log "1. Check if the database user has CREATE/ALTER permissions"
-    log "2. Verify the database '$DB_NAME' exists and is accessible"
-    log "3. Ensure DATABASE_URL credentials are correct"
-    log "4. Check PostgreSQL service is running in Coolify"
-    log ""
-    log "If this error mentions 'data loss', you may need to:"
-    log "- Backup your data first"
-    log "- Or create proper Prisma migrations"
-    exit 1
-  fi
+  log_error "Database schema synchronization failed!"
+  log "Error details:"
+  cat /tmp/push.log
+  log ""
+  log "If this error mentions 'data loss' or 'destructive changes':"
+  log "  - The schema change would DELETE existing data"
+  log "  - This is a SAFETY FEATURE to protect your production data"
+  log ""
+  log "To resolve this:"
+  log "1. Review the schema changes to ensure they are additive only"
+  log "2. New tables and new nullable columns are safe"
+  log "3. Removing columns, changing types, or adding required columns may cause data loss"
+  log "4. If you MUST make destructive changes, backup your data first"
+  log ""
+  log "Common safe changes:"
+  log "  - Adding new tables: SAFE"
+  log "  - Adding nullable columns: SAFE"
+  log "  - Adding columns with defaults: SAFE"
+  log ""
+  log "Potentially destructive changes:"
+  log "  - Removing tables or columns: DATA LOSS"
+  log "  - Changing column types: DATA LOSS"
+  log "  - Adding required columns without defaults: FAILS"
+  exit 1
 fi
 
 # Validate database setup
