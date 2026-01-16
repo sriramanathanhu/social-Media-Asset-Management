@@ -97,24 +97,60 @@ fi
 
 log_success "Prisma client generated successfully"
 
-# Run database setup - use db push for PostgreSQL (no migration files)
+# Run database setup - use migrate deploy for safe production deployments
 log "Setting up database schema with Prisma..."
-log "Using 'prisma db push' for PostgreSQL deployment (bypassing SQLite migration files)"
 
-if npx prisma db push --accept-data-loss 2>&1 | tee /tmp/push.log; then
-  log_success "Database schema synchronized successfully"
-  log "All tables and indexes created in PostgreSQL"
+# Check if migrations folder exists and has migrations
+if [ -d "prisma/migrations" ] && [ "$(ls -A prisma/migrations 2>/dev/null)" ]; then
+  log "Found migrations folder, using 'prisma migrate deploy' for safe deployment"
+
+  # Apply pending migrations (safe for production - no data loss)
+  if npx prisma migrate deploy 2>&1 | tee /tmp/migrate.log; then
+    log_success "Database migrations applied successfully"
+  else
+    log_warning "Migrate deploy had issues, checking details..."
+    cat /tmp/migrate.log
+
+    # If migrate deploy fails, try db push without --accept-data-loss
+    log "Attempting fallback with db push (safe mode - no data loss)..."
+    if npx prisma db push 2>&1 | tee /tmp/push.log; then
+      log_success "Database schema synchronized with db push"
+    else
+      log_error "Schema synchronization failed!"
+      log "Error details:"
+      cat /tmp/push.log
+      log ""
+      log "IMPORTANT: If this error mentions 'data loss', the schema change"
+      log "would delete existing data. You need to either:"
+      log "1. Backup your data first and manually approve the changes"
+      log "2. Create proper Prisma migrations that preserve data"
+      log "3. Modify the schema to be backwards compatible"
+      exit 1
+    fi
+  fi
 else
-  log_error "Database schema creation failed!"
-  log "Error details:"
-  cat /tmp/push.log
-  
-  log "Common solutions:"
-  log "1. Check if the database user has CREATE/ALTER permissions"
-  log "2. Verify the database '$DB_NAME' exists and is accessible"
-  log "3. Ensure DATABASE_URL credentials are correct"
-  log "4. Check PostgreSQL service is running in Coolify"
-  exit 1
+  # No migrations folder - use db push but WITHOUT --accept-data-loss
+  log "No migrations folder found, using 'prisma db push' (safe mode)"
+  log_warning "For production, consider using Prisma migrations for better control"
+
+  if npx prisma db push 2>&1 | tee /tmp/push.log; then
+    log_success "Database schema synchronized successfully"
+  else
+    log_error "Database schema creation failed!"
+    log "Error details:"
+    cat /tmp/push.log
+    log ""
+    log "Common solutions:"
+    log "1. Check if the database user has CREATE/ALTER permissions"
+    log "2. Verify the database '$DB_NAME' exists and is accessible"
+    log "3. Ensure DATABASE_URL credentials are correct"
+    log "4. Check PostgreSQL service is running in Coolify"
+    log ""
+    log "If this error mentions 'data loss', you may need to:"
+    log "- Backup your data first"
+    log "- Or create proper Prisma migrations"
+    exit 1
+  fi
 fi
 
 # Validate database setup

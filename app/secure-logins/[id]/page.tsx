@@ -69,6 +69,35 @@ interface HistoryEntry {
   created_at: string;
 }
 
+interface UserAccess {
+  id: number;
+  access_level: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  grantedByUser: {
+    id: number;
+    name: string;
+  } | null;
+  created_at: string;
+}
+
+interface GroupAccess {
+  id: number;
+  access_level: string;
+  group: {
+    id: number;
+    name: string;
+  };
+  grantedByUser: {
+    id: number;
+    name: string;
+  } | null;
+  created_at: string;
+}
+
 export default function SecureLoginDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
@@ -85,6 +114,12 @@ export default function SecureLoginDetailPage({ params }: { params: Promise<{ id
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Access data
+  const [userAccess, setUserAccess] = useState<UserAccess[]>([]);
+  const [groupAccess, setGroupAccess] = useState<GroupAccess[]>([]);
+  const [loadingAccess, setLoadingAccess] = useState(false);
+  const [showAccessSection, setShowAccessSection] = useState(true);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -138,6 +173,29 @@ export default function SecureLoginDetailPage({ params }: { params: Promise<{ id
       setLoadingHistory(false);
     }
   };
+
+  const loadAccessData = async () => {
+    try {
+      setLoadingAccess(true);
+      const res = await fetch(`/api/secure-logins/${resolvedParams.id}/access`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserAccess(data.userAccess || []);
+        setGroupAccess(data.groupAccess || []);
+      }
+    } catch (err) {
+      console.error("Error loading access data:", err);
+    } finally {
+      setLoadingAccess(false);
+    }
+  };
+
+  // Load access data on mount
+  useEffect(() => {
+    if (secureLogin) {
+      loadAccessData();
+    }
+  }, [secureLogin?.id]);
 
   const handleShowHistory = () => {
     if (!showHistory) {
@@ -733,12 +791,234 @@ export default function SecureLoginDetailPage({ params }: { params: Promise<{ id
         )}
       </div>
 
+      {/* Access Section */}
+      <div
+        style={{
+          backgroundColor: "white",
+          border: "1px solid #e5e7eb",
+          borderRadius: "12px",
+          padding: "1.5rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <h2 style={{ fontSize: "1rem", fontWeight: "600", color: "#333", margin: 0 }}>
+            <Users size={18} style={{ display: "inline", marginRight: "0.5rem", verticalAlign: "middle" }} />
+            Access ({userAccess.length + groupAccess.length + 1})
+          </h2>
+          <button
+            onClick={() => setShowAccessSection(!showAccessSection)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.5rem 1rem",
+              backgroundColor: showAccessSection ? "#dbeafe" : "#f3f4f6",
+              color: showAccessSection ? "#1e40af" : "#374151",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "13px",
+            }}
+          >
+            {showAccessSection ? "Hide" : "Show"} Access List
+          </button>
+        </div>
+
+        {showAccessSection && (
+          <div>
+            {loadingAccess ? (
+              <div style={{ textAlign: "center", padding: "1rem" }}>
+                <Loader2 size={20} style={{ animation: "spin 1s linear infinite" }} />
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {/* Owner */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0.75rem",
+                    backgroundColor: "#f0fdf4",
+                    borderRadius: "8px",
+                    border: "1px solid #bbf7d0",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "50%",
+                        backgroundColor: "#22c55e",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {secureLogin.creator.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: "500", fontSize: "14px" }}>
+                        {secureLogin.creator.name}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#666" }}>
+                        {secureLogin.creator.email}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      backgroundColor: "#dcfce7",
+                      color: "#166534",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Owner
+                  </span>
+                </div>
+
+                {/* User Access */}
+                {userAccess.map((access) => (
+                  <div
+                    key={`user-${access.id}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.75rem",
+                      backgroundColor: "#f9fafb",
+                      borderRadius: "8px",
+                      border: "1px solid #e5e7eb",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "50%",
+                          backgroundColor: access.access_level === "edit" ? "#3b82f6" : "#6b7280",
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {access.user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: "500", fontSize: "14px" }}>
+                          {access.user.name}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#666" }}>
+                          {access.user.email}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span
+                        style={{
+                          padding: "0.25rem 0.75rem",
+                          backgroundColor: access.access_level === "edit" ? "#dbeafe" : "#f3f4f6",
+                          color: access.access_level === "edit" ? "#1e40af" : "#4b5563",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {access.access_level === "edit" ? "Can Edit" : "Read Only"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Group Access */}
+                {groupAccess.map((access) => (
+                  <div
+                    key={`group-${access.id}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.75rem",
+                      backgroundColor: "#fefce8",
+                      borderRadius: "8px",
+                      border: "1px solid #fef08a",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "8px",
+                          backgroundColor: "#eab308",
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        <Users size={18} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: "500", fontSize: "14px" }}>
+                          {access.group.name}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#666" }}>
+                          Group
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span
+                        style={{
+                          padding: "0.25rem 0.75rem",
+                          backgroundColor: access.access_level === "edit" ? "#dbeafe" : "#f3f4f6",
+                          color: access.access_level === "edit" ? "#1e40af" : "#4b5563",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {access.access_level === "edit" ? "Can Edit" : "Read Only"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {userAccess.length === 0 && groupAccess.length === 0 && (
+                  <p style={{ color: "#666", fontSize: "14px", textAlign: "center", padding: "1rem" }}>
+                    Only the owner has access to this credential.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Access Manager Modal */}
       {showAccessManager && (
         <SecureLoginAccessManager
           secureLoginId={secureLogin.id}
           secureLoginName={secureLogin.item_name}
-          onClose={() => setShowAccessManager(false)}
+          onClose={() => {
+            setShowAccessManager(false);
+            loadAccessData(); // Refresh access data when modal closes
+          }}
         />
       )}
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/utils/auth';
-import { isSecureLoginOwner } from '@/lib/secureLoginPermissions';
+import { isSecureLoginOwner, getSecureLoginAccess } from '@/lib/secureLoginPermissions';
 import { logSecureLoginAccessGranted, logSecureLoginAccessRevoked } from '@/lib/secureLoginAudit';
 
 // GET /api/secure-logins/[id]/access - Get all access for a secure login
@@ -22,9 +22,9 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    // Only owner can view access list
-    const isOwner = await isSecureLoginOwner(auth.user.id, secureLoginId);
-    if (!isOwner) {
+    // Anyone with access can view access list (for transparency)
+    const access = await getSecureLoginAccess(auth.user.id, secureLoginId);
+    if (!access.canAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

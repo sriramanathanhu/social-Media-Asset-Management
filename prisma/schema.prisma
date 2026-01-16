@@ -30,6 +30,7 @@ model User {
 
   // Secure Logins relations
   secureLogins                  SecureLogin[]             @relation("SecureLoginOwner")
+  secureLoginFolders            SecureLoginFolder[]       @relation("SecureLoginFolderOwner")
   secureLoginGroups             SecureLoginGroup[]        @relation("SecureLoginGroupOwner")
   secureLoginGroupMemberships   SecureLoginGroupMember[]  @relation("SecureLoginGroupMember")
   addedSecureLoginGroupMembers  SecureLoginGroupMember[]  @relation("SecureLoginGroupMemberAddedBy")
@@ -228,6 +229,26 @@ model EmailSettings {
 // SECURE LOGINS (PASSWORD VAULT) MODELS
 // ==========================================
 
+model SecureLoginFolder {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  color       String?  @default("#6366f1") // Folder color for UI
+  icon        String?  @default("folder") // Icon name for UI
+  parent_id   Int?     // For nested folders
+  owner_id    Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  owner    User                 @relation("SecureLoginFolderOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  parent   SecureLoginFolder?   @relation("FolderHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  children SecureLoginFolder[]  @relation("FolderHierarchy")
+  logins   SecureLogin[]
+
+  @@unique([name, owner_id, parent_id]) // Unique folder name per owner at same level
+}
+
 model SecureLogin {
   id                Int       @id @default(autoincrement())
   item_name         String
@@ -238,6 +259,7 @@ model SecureLogin {
   notes             String?
   login_type        String    @default("email_password") // email_password, google_oauth
   google_account_id Int?      // Reference to EmailId for Google OAuth
+  folder_id         Int?      // Folder organization
   owner_id          Int
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
@@ -245,6 +267,7 @@ model SecureLogin {
   // Relations
   owner         User                    @relation("SecureLoginOwner", fields: [owner_id], references: [id], onDelete: Cascade)
   googleAccount EmailId?                @relation(fields: [google_account_id], references: [id])
+  folder        SecureLoginFolder?      @relation(fields: [folder_id], references: [id], onDelete: SetNull)
   userAccess    SecureLoginUserAccess[]
   groupAccess   SecureLoginGroupAccess[]
   history       SecureLoginHistory[]

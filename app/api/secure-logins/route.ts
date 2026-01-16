@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const loginType = searchParams.get('loginType') || '';
     const accessFilter = searchParams.get('access') || ''; // owned, shared, all
+    const folderId = searchParams.get('folder_id'); // Filter by folder
 
     const skip = (page - 1) * limit;
 
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
     if (accessibleIds.length === 0) {
       return NextResponse.json({
         list: [],
+        folders: [],
         pagination: { total: 0, page, limit, totalPages: 0 },
       });
     }
@@ -38,6 +40,7 @@ export async function GET(request: NextRequest) {
       OR?: Array<{ item_name?: { contains: string; mode: 'insensitive' }; website_url?: { contains: string; mode: 'insensitive' } }>;
       login_type?: string;
       owner_id?: number | { not: number };
+      folder_id?: number | null;
     }
 
     const where: WhereClause = {
@@ -64,6 +67,13 @@ export async function GET(request: NextRequest) {
       where.owner_id = { not: auth.user.id };
     }
 
+    // Apply folder filter
+    if (folderId === 'null' || folderId === 'root') {
+      where.folder_id = null; // Root level (unfiled) logins
+    } else if (folderId) {
+      where.folder_id = parseInt(folderId);
+    }
+
     // Get total count
     const total = await prisma.secureLogin.count({ where });
 
@@ -77,10 +87,24 @@ export async function GET(request: NextRequest) {
         googleAccount: {
           select: { id: true, email_address: true },
         },
+        folder: {
+          select: { id: true, name: true, color: true, icon: true },
+        },
       },
       orderBy: { updated_at: 'desc' },
       skip,
       take: limit,
+    });
+
+    // Get user's folders for the sidebar
+    const folders = await prisma.secureLoginFolder.findMany({
+      where: { owner_id: auth.user.id },
+      include: {
+        _count: {
+          select: { logins: true, children: true },
+        },
+      },
+      orderBy: { name: 'asc' },
     });
 
     // Process results: decrypt sensitive fields and add access level
@@ -99,6 +123,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       list: processedLogins,
+      folders,
       pagination: {
         total,
         page,
@@ -134,10 +159,24 @@ export async function POST(request: NextRequest) {
       login_type,
       google_account_id,
       linked_google_account_id, // Also accept this field name from frontend
+      folder_id,
     } = body;
 
     // Use either field name for google account id
     const googleAccountId = google_account_id || linked_google_account_id;
+
+    // Validate folder if provided
+    if (folder_id) {
+      const folder = await prisma.secureLoginFolder.findFirst({
+        where: { id: folder_id, owner_id: auth.user.id },
+      });
+      if (!folder) {
+        return NextResponse.json(
+          { error: 'Invalid folder' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Validate required fields
     if (!item_name) {
@@ -180,6 +219,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         login_type: login_type || 'email_password',
         google_account_id: googleAccountId || null,
+        folder_id: folder_id || null,
         owner_id: auth.user.id,
       },
       include: {

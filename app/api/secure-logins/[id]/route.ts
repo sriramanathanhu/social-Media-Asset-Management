@@ -124,6 +124,7 @@ export async function PUT(
       login_type,
       google_account_id,
       linked_google_account_id, // Also accept this field name from frontend
+      folder_id,
     } = body;
 
     // Use either field name for google account id
@@ -172,6 +173,7 @@ export async function PUT(
       notes?: string | null;
       login_type?: string;
       google_account_id?: number | null;
+      folder_id?: number | null;
       updated_at: Date;
     }
 
@@ -187,6 +189,7 @@ export async function PUT(
     if (notes !== undefined) updateData.notes = notes || null;
     if (login_type !== undefined) updateData.login_type = login_type;
     if (googleAccountId !== undefined) updateData.google_account_id = googleAccountId || null;
+    if (folder_id !== undefined) updateData.folder_id = folder_id;
 
     // Update the secure login
     const updatedLogin = await prisma.secureLogin.update({
