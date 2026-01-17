@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Eye, EyeOff, Copy, Check, Lock, ExternalLink, Users,
   Folder, FolderPlus, Upload, ChevronRight, ChevronDown,
-  MoreVertical, Edit2, Trash2, X
+  MoreVertical, Edit2, Trash2, X, UserPlus, FolderInput, Search
 } from "lucide-react";
 
 interface SecureLoginFolder {
@@ -77,8 +77,14 @@ export default function SecureLoginsPage() {
   // Modals
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [showBulkMoveModal, setShowBulkMoveModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState<SecureLoginFolder | null>(null);
   const [folderMenuOpen, setFolderMenuOpen] = useState<number | null>(null);
+
+  // Bulk selection
+  const [selectedLogins, setSelectedLogins] = useState<Set<number>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   const fetchSecureLogins = useCallback(async () => {
     try {
@@ -237,6 +243,95 @@ export default function SecureLoginsPage() {
       console.error("Error deleting folder:", error);
     }
     setFolderMenuOpen(null);
+  };
+
+  // Bulk selection handlers
+  const toggleSelectLogin = (id: number) => {
+    setSelectedLogins(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedLogins.size === secureLogins.length) {
+      setSelectedLogins(new Set());
+    } else {
+      setSelectedLogins(new Set(secureLogins.map(l => l.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedLogins(new Set());
+  };
+
+  const handleBulkMoveToFolder = async (folderId: number | null) => {
+    if (selectedLogins.size === 0) return;
+
+    setBulkActionLoading(true);
+    try {
+      const promises = Array.from(selectedLogins).map(id =>
+        fetch(`/api/secure-logins/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folder_id: folderId }),
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const successCount = results.filter(r => r.ok).length;
+
+      if (successCount > 0) {
+        alert(`Successfully moved ${successCount} credential(s) to folder`);
+        setSelectedLogins(new Set());
+        setShowBulkMoveModal(false);
+        fetchSecureLogins();
+      } else {
+        alert("Failed to move credentials");
+      }
+    } catch (error) {
+      console.error("Error moving credentials:", error);
+      alert("Failed to move credentials");
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkAssign = async (userId: number, accessLevel: string) => {
+    if (selectedLogins.size === 0) return;
+
+    setBulkActionLoading(true);
+    try {
+      const promises = Array.from(selectedLogins).map(id =>
+        fetch(`/api/secure-logins/${id}/access`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "user", target_id: userId, access_level: accessLevel }),
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const successCount = results.filter(r => r.ok).length;
+
+      if (successCount > 0) {
+        alert(`Successfully assigned ${successCount} credential(s) to user`);
+        setSelectedLogins(new Set());
+        setShowBulkAssignModal(false);
+        fetchSecureLogins();
+      } else {
+        alert("Failed to assign credentials");
+      }
+    } catch (error) {
+      console.error("Error assigning credentials:", error);
+      alert("Failed to assign credentials");
+    } finally {
+      setBulkActionLoading(false);
+    }
   };
 
   // Build folder tree from flat list
@@ -716,6 +811,82 @@ export default function SecureLoginsPage() {
           </div>
         </div>
 
+        {/* Bulk Actions Toolbar */}
+        {selectedLogins.size > 0 && (
+          <div
+            style={{
+              backgroundColor: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: "8px",
+              padding: "0.75rem 1rem",
+              marginBottom: "1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span style={{ fontWeight: "500", color: "#1e40af", fontSize: "14px" }}>
+                {selectedLogins.size} credential{selectedLogins.size > 1 ? "s" : ""} selected
+              </span>
+              <button
+                onClick={clearSelection}
+                style={{
+                  padding: "0.25rem 0.5rem",
+                  fontSize: "12px",
+                  color: "#666",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Clear selection
+              </button>
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => setShowBulkMoveModal(true)}
+                style={{
+                  padding: "0.5rem 0.75rem",
+                  backgroundColor: "white",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  color: "#374151",
+                }}
+              >
+                <FolderInput size={14} />
+                Move to Folder
+              </button>
+              <button
+                onClick={() => setShowBulkAssignModal(true)}
+                style={{
+                  padding: "0.5rem 0.75rem",
+                  backgroundColor: "#2563eb",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                }}
+              >
+                <UserPlus size={14} />
+                Assign to User
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Secure Logins Table */}
         <div
           style={{
@@ -729,6 +900,14 @@ export default function SecureLoginsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #e5e7eb" }}>
+                  <th style={{ padding: "0.75rem", textAlign: "center", fontWeight: "600", fontSize: "14px", width: "40px" }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedLogins.size === secureLogins.length && secureLogins.length > 0}
+                      onChange={toggleSelectAll}
+                      style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                    />
+                  </th>
                   <th style={{ padding: "0.75rem", textAlign: "left", fontWeight: "600", fontSize: "14px" }}>
                     Name
                   </th>
@@ -754,7 +933,21 @@ export default function SecureLoginsPage() {
               </thead>
               <tbody>
                 {secureLogins.map((login) => (
-                  <tr key={login.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                  <tr
+                    key={login.id}
+                    style={{
+                      borderBottom: "1px solid #f0f0f0",
+                      backgroundColor: selectedLogins.has(login.id) ? "#f0f9ff" : "transparent",
+                    }}
+                  >
+                    <td style={{ padding: "0.75rem", textAlign: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedLogins.has(login.id)}
+                        onChange={() => toggleSelectLogin(login.id)}
+                        style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                      />
+                    </td>
                     <td style={{ padding: "0.75rem" }}>
                       <div>
                         <p style={{ fontWeight: "500", color: "#333", marginBottom: "0.25rem" }}>
@@ -1060,6 +1253,27 @@ export default function SecureLoginsPage() {
             setShowImportModal(false);
             fetchSecureLogins();
           }}
+        />
+      )}
+
+      {/* Bulk Assign Modal */}
+      {showBulkAssignModal && (
+        <BulkAssignModal
+          selectedCount={selectedLogins.size}
+          onClose={() => setShowBulkAssignModal(false)}
+          onAssign={handleBulkAssign}
+          loading={bulkActionLoading}
+        />
+      )}
+
+      {/* Bulk Move to Folder Modal */}
+      {showBulkMoveModal && (
+        <BulkMoveModal
+          selectedCount={selectedLogins.size}
+          folders={folders}
+          onClose={() => setShowBulkMoveModal(false)}
+          onMove={handleBulkMoveToFolder}
+          loading={bulkActionLoading}
         />
       )}
 
@@ -1730,6 +1944,325 @@ function ImportModal({
             >
               <Upload size={16} />
               {importing ? "Importing..." : "Import"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Bulk Assign Modal Component
+function BulkAssignModal({
+  selectedCount,
+  onClose,
+  onAssign,
+  loading,
+}: {
+  selectedCount: number;
+  onClose: () => void;
+  onAssign: (userId: number, accessLevel: string) => void;
+  loading: boolean;
+}) {
+  const [users, setUsers] = useState<Array<{ id: number; name: string; email: string }>>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [accessLevel, setAccessLevel] = useState("read");
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch("/api/users?limit=100");
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data.list || []);
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const handleSubmit = () => {
+    if (selectedUserId) {
+      onAssign(selectedUserId, accessLevel);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          width: "100%",
+          maxWidth: "450px",
+          maxHeight: "90vh",
+          overflow: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{
+          padding: "1.25rem",
+          borderBottom: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}>
+          <h2 style={{ fontSize: "18px", fontWeight: "600", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <UserPlus size={20} />
+            Assign to User
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#666",
+              padding: "0.25rem",
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div style={{ padding: "1.25rem" }}>
+          <p style={{ fontSize: "14px", color: "#666", marginBottom: "1rem" }}>
+            Assign <strong>{selectedCount}</strong> credential{selectedCount > 1 ? "s" : ""} to a user
+          </p>
+
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500", fontSize: "14px" }}>
+              Select User <span style={{ color: "#dc2626" }}>*</span>
+            </label>
+            {loadingUsers ? (
+              <div style={{ padding: "0.75rem", color: "#666", fontSize: "14px" }}>Loading users...</div>
+            ) : (
+              <select
+                value={selectedUserId || ""}
+                onChange={(e) => setSelectedUserId(e.target.value ? parseInt(e.target.value) : null)}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem 0.75rem",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                }}
+              >
+                <option value="">Choose a user...</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500", fontSize: "14px" }}>
+              Access Level
+            </label>
+            <select
+              value={accessLevel}
+              onChange={(e) => setAccessLevel(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.5rem 0.75rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="read">Read Only - Can view credentials</option>
+              <option value="edit">Edit - Can view and modify credentials</option>
+            </select>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "0.5rem 1rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                backgroundColor: "white",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !selectedUserId}
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: loading || !selectedUserId ? "#93c5fd" : "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: loading || !selectedUserId ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              {loading ? "Assigning..." : "Assign"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Bulk Move to Folder Modal Component
+function BulkMoveModal({
+  selectedCount,
+  folders,
+  onClose,
+  onMove,
+  loading,
+}: {
+  selectedCount: number;
+  folders: SecureLoginFolder[];
+  onClose: () => void;
+  onMove: (folderId: number | null) => void;
+  loading: boolean;
+}) {
+  const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
+
+  const handleSubmit = () => {
+    onMove(selectedFolderId);
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          width: "100%",
+          maxWidth: "450px",
+          maxHeight: "90vh",
+          overflow: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{
+          padding: "1.25rem",
+          borderBottom: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}>
+          <h2 style={{ fontSize: "18px", fontWeight: "600", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <FolderInput size={20} />
+            Move to Folder
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#666",
+              padding: "0.25rem",
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div style={{ padding: "1.25rem" }}>
+          <p style={{ fontSize: "14px", color: "#666", marginBottom: "1rem" }}>
+            Move <strong>{selectedCount}</strong> credential{selectedCount > 1 ? "s" : ""} to a folder
+          </p>
+
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500", fontSize: "14px" }}>
+              Select Folder
+            </label>
+            <select
+              value={selectedFolderId ?? ""}
+              onChange={(e) => setSelectedFolderId(e.target.value ? parseInt(e.target.value) : null)}
+              style={{
+                width: "100%",
+                padding: "0.5rem 0.75rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="">No Folder (Root)</option>
+              {folders.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "0.5rem 1rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                backgroundColor: "white",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: loading ? "#93c5fd" : "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              {loading ? "Moving..." : "Move"}
             </button>
           </div>
         </div>
